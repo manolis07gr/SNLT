@@ -1,0 +1,18 @@
+==============================================================================
+ day000.8 (epoch 0.8d) — RT-NLTE convergence audit
+==============================================================================
+
+Final L_line: 2.6733e+40 erg/s
+L_line variation across 3 iterations: 0.692% (range 2.6549e+40 – 2.6733e+40)
+
+L_line is INVARIANT across iterations (<1%).
+Any per-zone n_3 oscillation visible below is NUMERICAL,
+not affecting the global line answer.
+
+Per-iteration history (worst-oscillating zone):
+
+   it       L_line     Δn3_max   zone      r [cm]    X_HII        n_e    T [K]         n_3       J_bar
+    1   2.6732e+40   60588.55%     38   5.117e+15   0.3377  7.514e+07     5120   1.510e+02   4.719e-09
+    2   2.6733e+40       0.53%      2   2.817e+15   1.0000  7.413e+08     7619   8.659e+03   7.561e-09
+
+Most-frequently-worst zone: idx=38  (1/2 iters)

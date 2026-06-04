@@ -1,0 +1,21 @@
+==============================================================================
+ day005 (epoch 5.0d) — RT-NLTE convergence audit
+==============================================================================
+
+Final L_line: 2.5656e+40 erg/s
+L_line variation across 3 iterations: 0.008% (range 2.5653e+40 – 2.5656e+40)
+
+L_line is INVARIANT across iterations (<1%).
+Any per-zone n_3 oscillation visible below is NUMERICAL,
+not affecting the global line answer.
+
+Per-iteration history (worst-oscillating zone):
+
+   it       L_line     Δn3_max   zone      r [cm]    X_HII        n_e    T [K]         n_3       J_bar
+    1   2.5655e+40   38271.45%     36   5.127e+15   0.9851  2.235e+08     6179   6.932e+01   6.225e-08
+    2   2.5656e+40       2.62%     36   5.127e+15   0.9851  2.235e+08     6179   7.113e+01   6.684e-08
+
+Most-frequently-worst zone: idx=36  (2/2 iters)
+  → A SINGLE zone is dominating the convergence diagnostic.
+  Likely physical cause: line radiative trapping in a high-τ dense zone.
+  If L_line is invariant (above), this is benign.

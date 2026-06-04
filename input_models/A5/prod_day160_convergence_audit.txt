@@ -1,0 +1,23 @@
+==============================================================================
+ day160 (epoch 160.0d) — RT-NLTE convergence audit
+==============================================================================
+
+Final L_line: 2.6757e+38 erg/s
+L_line variation across 7 iterations: 16.189% (range 2.3029e+38 – 2.6757e+38)
+
+⚠ L_line varies significantly across iterations (>10%).
+  Per-zone oscillations ARE affecting the global answer.
+  Recommend: increase damping (current run used 0.3),
+  raise max_iter, or investigate the worst zones below.
+
+Per-iteration history (worst-oscillating zone):
+
+   it       L_line     Δn3_max   zone      r [cm]    X_HII        n_e    T [K]         n_3       J_bar
+    1   2.5470e+38  407455.17%    718   3.727e+15   0.0001  7.140e+05     2355   2.533e-04   7.715e-10
+    2   2.6229e+38    2373.67%     71   4.530e+14   0.0075  6.850e+07     2964   2.891e+00   1.788e-10
+    3   2.6478e+38    4596.80%    172   4.947e+14   0.0073  1.665e+08     3047   1.764e+01   2.323e-10
+    4   2.6629e+38    2619.14%    135   4.803e+14   0.0073  1.556e+08     3033   2.582e+01   4.225e-10
+    5   2.6711e+38    1156.88%    124   4.766e+14   0.0072  1.506e+08     3033   8.930e+00   1.441e-10
+    6   2.6757e+38    1081.86%     73   4.542e+14   0.0075  7.139e+07     2971   1.939e+01   1.172e-09
+
+Most-frequently-worst zone: idx=718  (1/6 iters)

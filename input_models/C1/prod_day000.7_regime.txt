@@ -1,0 +1,62 @@
+================================================================================================
+ regime_diagnostics — per-snapshot line classification
+================================================================================================
+epoch:    0.70 d
+T_phot:   12263.0902832223 K
+R_phot:   163388375213396.5 cm
+Hα (production RT-NLTE): L_line = 3.117e+26 erg/s
+
+line           grade  regime             τ_med      τ_max      β_med      L_line[erg/s] 
+------------------------------------------------------------------------------------------------
+Halpha_prod    A      optically_thin     4.32e-11  4.32e-10     --      3.117e+26
+He_II_1640     R      optically_thin     6.16e-23  6.16e-22     --      4.541e+27
+He_II_3203     A      optically_thin     1.83e-29  1.83e-28     --      2.901e+26
+He_II_4686     A      optically_thin     2.47e-28  2.47e-27     --      6.693e+26
+He_II_10124    A      optically_thin     1.00e-30  1.00e-29     --      5.719e+25
+He_I_5876      A      optically_thin     2.67e-07  2.67e-06     --      2.442e+37
+He_I_6678      A      optically_thin     1.50e-08  1.50e-07     --      4.014e+36
+He_I_7065      A      optically_thin     3.63e-08  3.63e-07     --      1.072e+37
+He_I_10830     A      optically_thin     9.11e-02  9.11e-01     --      3.875e+38
+Halpha         A      optically_thin     4.32e-11  4.32e-10     --      3.117e+26
+Hbeta          A      optically_thin     6.09e-12  6.09e-11     --      1.099e+26
+Hgamma         A      optically_thin     2.05e-12  2.05e-11     --      5.151e+25
+Palpha         A      optically_thin     8.12e-12  8.12e-11     --      1.268e+25
+Pbeta          A      optically_thin     1.23e-12  1.23e-11     --      9.562e+24
+
+Per-line action recommendations:
+------------------------------------------------------------------------------------------------
+  Halpha_prod    (A): Quote production L_line and EW directly. Grade-A.
+    └─ Full RT-NLTE iteration in production_runner (L_line invariant across iters to <0.01%).
+  He_II_1640     (R): Plot profile shape and FWHM/velocity. Do not quote absolute L_line as a definitive value.
+    └─ RESONANCE LINE: Lyα-cascade and continuum recombination physics not fully modeled; absolute L systematically over-predicted. Use for shape comparison only. Atomic physics outside current implementation scope.
+  He_II_3203     (A): Quote L_line and EW directly. Grade-A.
+    └─ τ < 1 everywhere; single-shot kernel exact.
+  He_II_4686     (A): Quote L_line and EW directly. Grade-A.
+    └─ τ < 1 everywhere; single-shot kernel exact.
+  He_II_10124    (A): Quote L_line and EW directly. Grade-A.
+    └─ τ < 1 everywhere; single-shot kernel exact.
+  He_I_5876      (A): Quote L_line and EW directly. Grade-A.
+    └─ τ < 1 everywhere; single-shot kernel exact.
+  He_I_6678      (A): Quote L_line and EW directly. Grade-A.
+    └─ Marginal line; quoting requires τ < 1 epoch flag. τ < 1 everywhere; single-shot kernel exact.
+  He_I_7065      (A): Quote L_line and EW directly. Grade-A.
+    └─ τ < 1 everywhere; single-shot kernel exact.
+  He_I_10830     (A): Quote L_line and EW directly. Grade-A.
+    └─ METASTABLE TRIPLET: 2³S → 2³P pumping not iterated. Quote shape; absolute L requires Phase 5b-rigorous. τ < 1 everywhere; single-shot kernel exact.
+  Halpha         (A): Quote L_line and EW directly. Grade-A.
+    └─ τ < 1 everywhere; single-shot kernel exact.
+  Hbeta          (A): Quote L_line and EW directly. Grade-A.
+    └─ Single-shot β; empirical R-scaled. τ < 1 everywhere; single-shot kernel exact.
+  Hgamma         (A): Quote L_line and EW directly. Grade-A.
+    └─ Single-shot β; empirical R-scaled. τ < 1 everywhere; single-shot kernel exact.
+  Palpha         (A): Quote L_line and EW directly. Grade-A.
+    └─ Paschen series; same iteration status as Hβ. τ < 1 everywhere; single-shot kernel exact.
+  Pbeta          (A): Quote L_line and EW directly. Grade-A.
+    └─ Paschen series; same iteration status as Hβ. τ < 1 everywhere; single-shot kernel exact.
+
+Grade legend:
+  A = Paper-quality. Quote L and EW directly.
+  B = Paper-quality with caveat. Hα-anchored empirical R.
+  C = Shape only; absolute L uncertain to factors 2-5.
+  R = Reference shape only; atomic physics outside scope.
+================================================================================================

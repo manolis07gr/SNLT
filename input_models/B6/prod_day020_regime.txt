@@ -1,0 +1,62 @@
+================================================================================================
+ regime_diagnostics — per-snapshot line classification
+================================================================================================
+epoch:    20.00 d
+T_phot:   6721.687723397421 K
+R_phot:   1587356883227271.0 cm
+Hα (production RT-NLTE): L_line = 3.735e+40 erg/s
+
+line           grade  regime             τ_med      τ_max      β_med      L_line[erg/s] 
+------------------------------------------------------------------------------------------------
+Halpha_prod    A      saturated          1.12e+04  1.12e+05     --      3.735e+40
+He_II_1640     R      optically_thin     3.86e-28  3.86e-27     --      1.285e+10
+He_II_3203     A      optically_thin     1.31e-28  1.31e-27     --      3.249e+08
+He_II_4686     A      optically_thin     1.22e-27  1.22e-26     --      7.595e+08
+He_II_10124    A      optically_thin     3.07e-27  3.07e-26     --      6.404e+07
+He_I_5876      B      optically_thick    1.57e+01  1.57e+02     --      4.953e+38
+He_I_6678      A      optically_thin     2.19e-05  2.19e-04     --      2.921e+38
+He_I_7065      B      intermediate       2.13e+00  2.13e+01     --      2.442e+38
+He_I_10830     C      saturated          5.90e+04  5.90e+05     --      4.629e+38
+Halpha         B      saturated          1.12e+04  1.12e+05     --      3.735e+40
+Hbeta          B      optically_thick    1.63e+03  1.63e+04     --      1.262e+40
+Hgamma         B      optically_thick    5.45e+02  5.45e+03     --      5.961e+39
+Palpha         B      optically_thick    4.86e+03  4.86e+04     --      1.518e+39
+Pbeta          B      optically_thick    5.94e+02  5.94e+03     --      1.137e+39
+
+Per-line action recommendations:
+------------------------------------------------------------------------------------------------
+  Halpha_prod    (A): Quote production L_line and EW directly. Grade-A.
+    └─ Full RT-NLTE iteration in production_runner (L_line invariant across iters to <0.01%).
+  He_II_1640     (R): Plot profile shape and FWHM/velocity. Do not quote absolute L_line as a definitive value.
+    └─ RESONANCE LINE: Lyα-cascade and continuum recombination physics not fully modeled; absolute L systematically over-predicted. Use for shape comparison only. Atomic physics outside current implementation scope.
+  He_II_3203     (A): Quote L_line and EW directly. Grade-A.
+    └─ τ < 1 everywhere; single-shot kernel exact.
+  He_II_4686     (A): Quote L_line and EW directly. Grade-A.
+    └─ τ < 1 everywhere; single-shot kernel exact.
+  He_II_10124    (A): Quote L_line and EW directly. Grade-A.
+    └─ τ < 1 everywhere; single-shot kernel exact.
+  He_I_5876      (B): Quote L_line as "Hα-anchored empirical estimate".
+    └─ Intermediate τ; single-shot β + empirical R is paper-quality.
+  He_I_6678      (A): Quote L_line and EW directly. Grade-A.
+    └─ Marginal line; quoting requires τ < 1 epoch flag. τ < 1 everywhere; single-shot kernel exact.
+  He_I_7065      (B): Quote L_line as "Hα-anchored empirical estimate".
+    └─ Intermediate τ; single-shot β + empirical R is paper-quality.
+  He_I_10830     (C): Plot profile; note absolute scale uncertainty in caption. Use shape diagnostics (FWHM, v_peak) as primary observable.
+    └─ METASTABLE TRIPLET: 2³S → 2³P pumping not iterated. Quote shape; absolute L requires Phase 5b-rigorous. Saturated AND no per-line iteration — absolute L uncertain to factors of 2-5.
+  Halpha         (B): Quote L_line with caveat; use peak F and v_peak as primary observables.
+    └─ Saturated but with RT-NLTE iteration; absolute L still has ~2x systematic from kernel/iteration interaction.
+  Hbeta          (B): Quote L_line as estimate; note "per-line J_bar iteration would refine to ~factor of 2".
+    └─ Single-shot β; empirical R-scaled. Optically thick; empirical Hα-anchored R reduces systematic to factor-of-2.
+  Hgamma         (B): Quote L_line as "Hα-anchored empirical estimate".
+    └─ Single-shot β; empirical R-scaled. Intermediate τ; single-shot β + empirical R is paper-quality.
+  Palpha         (B): Quote L_line as estimate; note "per-line J_bar iteration would refine to ~factor of 2".
+    └─ Paschen series; same iteration status as Hβ. Optically thick; empirical Hα-anchored R reduces systematic to factor-of-2.
+  Pbeta          (B): Quote L_line as "Hα-anchored empirical estimate".
+    └─ Paschen series; same iteration status as Hβ. Intermediate τ; single-shot β + empirical R is paper-quality.
+
+Grade legend:
+  A = Paper-quality. Quote L and EW directly.
+  B = Paper-quality with caveat. Hα-anchored empirical R.
+  C = Shape only; absolute L uncertain to factors 2-5.
+  R = Reference shape only; atomic physics outside scope.
+================================================================================================

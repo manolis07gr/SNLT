@@ -1,0 +1,62 @@
+================================================================================================
+ regime_diagnostics — per-snapshot line classification
+================================================================================================
+epoch:    1.00 d
+T_phot:   7763.781818891553 K
+R_phot:   2625297373199640.0 cm
+Hα (production RT-NLTE): L_line = 2.685e+40 erg/s
+
+line           grade  regime             τ_med      τ_max      β_med      L_line[erg/s] 
+------------------------------------------------------------------------------------------------
+Halpha_prod    A      saturated          2.20e+06  2.20e+07     --      2.685e+40
+He_II_1640     R      optically_thin     6.15e-21  6.15e-20     --      3.262e+16
+He_II_3203     A      optically_thin     2.08e-28  2.08e-27     --      2.094e+15
+He_II_4686     A      optically_thin     1.93e-27  1.93e-26     --      4.830e+15
+He_II_10124    A      optically_thin     4.28e-27  4.28e-26     --      4.128e+14
+He_I_5876      C      saturated          4.19e+06  4.19e+07     --      5.054e+38
+He_I_6678      A      optically_thin     0.00e+00  0.00e+00     --      1.596e+38
+He_I_7065      C      saturated          5.64e+05  5.64e+06     --      2.142e+38
+He_I_10830     C      saturated          1.51e+07  1.51e+08     --      4.281e+38
+Halpha         B      saturated          2.20e+06  2.20e+07     --      2.685e+40
+Hbeta          C      saturated          7.95e+05  7.95e+06     --      9.150e+39
+Hgamma         C      saturated          2.87e+05  2.87e+06     --      4.315e+39
+Palpha         C      saturated          2.96e+07  2.96e+08     --      1.091e+39
+Pbeta          C      saturated          4.08e+06  4.08e+07     --      8.187e+38
+
+Per-line action recommendations:
+------------------------------------------------------------------------------------------------
+  Halpha_prod    (A): Quote production L_line and EW directly. Grade-A.
+    └─ Full RT-NLTE iteration in production_runner (L_line invariant across iters to <0.01%).
+  He_II_1640     (R): Plot profile shape and FWHM/velocity. Do not quote absolute L_line as a definitive value.
+    └─ RESONANCE LINE: Lyα-cascade and continuum recombination physics not fully modeled; absolute L systematically over-predicted. Use for shape comparison only. Atomic physics outside current implementation scope.
+  He_II_3203     (A): Quote L_line and EW directly. Grade-A.
+    └─ τ < 1 everywhere; single-shot kernel exact.
+  He_II_4686     (A): Quote L_line and EW directly. Grade-A.
+    └─ τ < 1 everywhere; single-shot kernel exact.
+  He_II_10124    (A): Quote L_line and EW directly. Grade-A.
+    └─ τ < 1 everywhere; single-shot kernel exact.
+  He_I_5876      (C): Plot profile; note absolute scale uncertainty in caption. Use shape diagnostics (FWHM, v_peak) as primary observable.
+    └─ Saturated AND no per-line iteration — absolute L uncertain to factors of 2-5.
+  He_I_6678      (A): Quote L_line and EW directly. Grade-A.
+    └─ Marginal line; quoting requires τ < 1 epoch flag. τ < 1 everywhere; single-shot kernel exact.
+  He_I_7065      (C): Plot profile; note absolute scale uncertainty in caption. Use shape diagnostics (FWHM, v_peak) as primary observable.
+    └─ Saturated AND no per-line iteration — absolute L uncertain to factors of 2-5.
+  He_I_10830     (C): Plot profile; note absolute scale uncertainty in caption. Use shape diagnostics (FWHM, v_peak) as primary observable.
+    └─ METASTABLE TRIPLET: 2³S → 2³P pumping not iterated. Quote shape; absolute L requires Phase 5b-rigorous. Saturated AND no per-line iteration — absolute L uncertain to factors of 2-5.
+  Halpha         (B): Quote L_line with caveat; use peak F and v_peak as primary observables.
+    └─ Saturated but with RT-NLTE iteration; absolute L still has ~2x systematic from kernel/iteration interaction.
+  Hbeta          (C): Plot profile; note absolute scale uncertainty in caption. Use shape diagnostics (FWHM, v_peak) as primary observable.
+    └─ Single-shot β; empirical R-scaled. Saturated AND no per-line iteration — absolute L uncertain to factors of 2-5.
+  Hgamma         (C): Plot profile; note absolute scale uncertainty in caption. Use shape diagnostics (FWHM, v_peak) as primary observable.
+    └─ Single-shot β; empirical R-scaled. Saturated AND no per-line iteration — absolute L uncertain to factors of 2-5.
+  Palpha         (C): Plot profile; note absolute scale uncertainty in caption. Use shape diagnostics (FWHM, v_peak) as primary observable.
+    └─ Paschen series; same iteration status as Hβ. Saturated AND no per-line iteration — absolute L uncertain to factors of 2-5.
+  Pbeta          (C): Plot profile; note absolute scale uncertainty in caption. Use shape diagnostics (FWHM, v_peak) as primary observable.
+    └─ Paschen series; same iteration status as Hβ. Saturated AND no per-line iteration — absolute L uncertain to factors of 2-5.
+
+Grade legend:
+  A = Paper-quality. Quote L and EW directly.
+  B = Paper-quality with caveat. Hα-anchored empirical R.
+  C = Shape only; absolute L uncertain to factors 2-5.
+  R = Reference shape only; atomic physics outside scope.
+================================================================================================

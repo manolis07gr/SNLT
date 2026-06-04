@@ -1,0 +1,62 @@
+================================================================================================
+ regime_diagnostics — per-snapshot line classification
+================================================================================================
+epoch:    100.00 d
+T_phot:   4008.636845081272 K
+R_phot:   249680921896172.1 cm
+Hα (production RT-NLTE): L_line = 0.000e+00 erg/s
+
+line           grade  regime             τ_med      τ_max      β_med      L_line[erg/s] 
+------------------------------------------------------------------------------------------------
+Halpha_prod    A      optically_thin     nan  inf     --      0.000e+00
+He_II_1640     R      optically_thin     nan  inf     --      nan
+He_II_3203     A      optically_thin     nan  inf     --      nan
+He_II_4686     A      optically_thin     nan  inf     --      nan
+He_II_10124    A      optically_thin     nan  inf     --      nan
+He_I_5876      A      optically_thin     nan  inf     --      3.625e+34
+He_I_6678      A      optically_thin     nan  inf     --      1.119e+34
+He_I_7065      A      optically_thin     nan  inf     --      1.273e+34
+He_I_10830     A      optically_thin     nan  inf     --      4.655e+36
+Halpha         A      optically_thin     nan  inf     --      nan
+Hbeta          A      optically_thin     nan  inf     --      nan
+Hgamma         A      optically_thin     nan  inf     --      nan
+Palpha         A      optically_thin     nan  inf     --      nan
+Pbeta          A      optically_thin     nan  inf     --      nan
+
+Per-line action recommendations:
+------------------------------------------------------------------------------------------------
+  Halpha_prod    (A): Quote production L_line and EW directly. Grade-A.
+    └─ Full RT-NLTE iteration in production_runner (L_line invariant across iters to <0.01%).
+  He_II_1640     (R): Plot profile shape and FWHM/velocity. Do not quote absolute L_line as a definitive value.
+    └─ RESONANCE LINE: Lyα-cascade and continuum recombination physics not fully modeled; absolute L systematically over-predicted. Use for shape comparison only. Atomic physics outside current implementation scope.
+  He_II_3203     (A): Quote L_line and EW directly. Grade-A.
+    └─ τ < 1 everywhere; single-shot kernel exact.
+  He_II_4686     (A): Quote L_line and EW directly. Grade-A.
+    └─ τ < 1 everywhere; single-shot kernel exact.
+  He_II_10124    (A): Quote L_line and EW directly. Grade-A.
+    └─ τ < 1 everywhere; single-shot kernel exact.
+  He_I_5876      (A): Quote L_line and EW directly. Grade-A.
+    └─ τ < 1 everywhere; single-shot kernel exact.
+  He_I_6678      (A): Quote L_line and EW directly. Grade-A.
+    └─ Marginal line; quoting requires τ < 1 epoch flag. τ < 1 everywhere; single-shot kernel exact.
+  He_I_7065      (A): Quote L_line and EW directly. Grade-A.
+    └─ τ < 1 everywhere; single-shot kernel exact.
+  He_I_10830     (A): Quote L_line and EW directly. Grade-A.
+    └─ METASTABLE TRIPLET: 2³S → 2³P pumping not iterated. Quote shape; absolute L requires Phase 5b-rigorous. τ < 1 everywhere; single-shot kernel exact.
+  Halpha         (A): Quote L_line and EW directly. Grade-A.
+    └─ τ < 1 everywhere; single-shot kernel exact.
+  Hbeta          (A): Quote L_line and EW directly. Grade-A.
+    └─ Single-shot β; empirical R-scaled. τ < 1 everywhere; single-shot kernel exact.
+  Hgamma         (A): Quote L_line and EW directly. Grade-A.
+    └─ Single-shot β; empirical R-scaled. τ < 1 everywhere; single-shot kernel exact.
+  Palpha         (A): Quote L_line and EW directly. Grade-A.
+    └─ Paschen series; same iteration status as Hβ. τ < 1 everywhere; single-shot kernel exact.
+  Pbeta          (A): Quote L_line and EW directly. Grade-A.
+    └─ Paschen series; same iteration status as Hβ. τ < 1 everywhere; single-shot kernel exact.
+
+Grade legend:
+  A = Paper-quality. Quote L and EW directly.
+  B = Paper-quality with caveat. Hα-anchored empirical R.
+  C = Shape only; absolute L uncertain to factors 2-5.
+  R = Reference shape only; atomic physics outside scope.
+================================================================================================

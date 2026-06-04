@@ -1,0 +1,91 @@
+==============================================================================
+ snline — FILE MANIFEST for a new production directory
+==============================================================================
+ Dependency graph traced from production_runner.py (the batch entry point),
+ including deferred imports inside functions. Verified by import-scan +
+ compile-check of all staging files.
+
+ LEGEND:
+   [STAGING]  = maintained in this effort; copy the LATEST version (the one
+                you were just given). These are the files I have.
+   [EXTERNAL] = lives ONLY in your existing working dir; never in staging.
+                MANDATORY runtime dependency. Copy from your current
+                "LINE MODELING" directory. If missing → ModuleNotFoundError.
+==============================================================================
+
+------------------------------------------------------------------------------
+ GROUP A — PRODUCTION CORE  (required to run a batch)
+------------------------------------------------------------------------------
+ [STAGING]   production_runner.py        main entry point (batch + single)
+ [STAGING]   snline_autoparams.py        derive_parameters_from_state, v_turb
+ [STAGING]   peel_pipeline_abs.py        run_peel_pipeline_abs (MC driver)
+ [STAGING]   stella_io.py                STELLA loader + photosphere truncation
+ [STAGING]   phase5_runner.py            13-line driver + empirical R-correction
+ [STAGING]   mc_multi_line.py            multi-line MC kernel (LINE_CATALOG)
+ [STAGING]   phase5_continuum.py         per-line continuum (HE_LINES_AA, C_LIGHT)
+ [STAGING]   regime_diagnostics.py       per-line/epoch trust grading (A/B/C/R)
+ [STAGING]   make_phase5_movie.py        batch movie + grid generation
+ [STAGING]   snline_he1_integration.py   He I populations → state
+ [STAGING]   snline_he2_integration.py   He II populations → state
+ [STAGING]   nlte_he1.py                 He I NLTE solver (11 levels)
+ [STAGING]   nlte_he2.py                 He II NLTE solver (10 levels)
+ [STAGING]   he1_atom.py                 He I atomic data
+ [STAGING]   he2_atom.py                 He II atomic data
+ [STAGING]   h_populations_nlte.py       H n=2/n=3 NLTE (used by autoparams)
+
+ [STAGING]   opacity.py                  Phase-1 opacities
+ [STAGING]   photosphere_v2.py           Phase-1 photosphere finder
+   (opacity.py + photosphere_v2.py are Phase-1 core; snapshot_analyzer and
+    the photosphere logic depend on them. Include to be safe — they are small.)
+
+ [EXTERNAL]  snapshot_analyzer.py        analyze_snapshot  (per-snapshot setup)
+ [EXTERNAL]  measure_jbar.py             compute_jbar_from_mc  (RT-NLTE J_bar)
+ [EXTERNAL]  wind_extension.py           extend_wind_outward
+ [EXTERNAL]  photoionize_csm.py          solve_photoionization_equilibrium,
+                                         derive_shock_params
+ [EXTERNAL]  sn_mc_voigt_peel.py         run_mc_voigt_peel  (core MC peel)
+ [EXTERNAL]  lines.py                    LINE_LIB  (line library for peel)
+
+------------------------------------------------------------------------------
+ GROUP B — DIAGNOSTICS / UTILITIES  (optional, recommended)
+------------------------------------------------------------------------------
+ [STAGING]   make_regime_summary_posthoc.py  re-grade from existing *_lines.npz
+ [STAGING]   diagnose_shock_emergence.py     fast-shell-above-photosphere metric
+ [STAGING]   diagnose_day20_peaks.py         tau(v_proj) vs velocity-field check
+
+------------------------------------------------------------------------------
+ GROUP C — TESTS  (optional; for validation after setup)
+------------------------------------------------------------------------------
+ [STAGING]   test_phase1.py
+ [STAGING]   test_phase1_synthetic_IIP.py
+ [STAGING]   test_phase2.py
+ [STAGING]   test_phase3.py
+ [STAGING]   test_phase3_integration.py
+ [STAGING]   test_phase4_he2.py
+ [STAGING]   test_phase4_v2.py
+ [STAGING]   test_joint_clean.py
+ [STAGING]   test_solution1_eps_lya.py
+   (NOTE: tests also import the EXTERNAL modules above, esp. sn_mc_voigt_peel.)
+
+------------------------------------------------------------------------------
+ GROUP D — DOCS
+------------------------------------------------------------------------------
+ [STAGING]   RUNBOOK.md                  per-model operating procedure
+ [STAGING]   FILE_MANIFEST.txt           this file
+
+==============================================================================
+ COUNTS
+   Group A: 16 staging + 2 Phase-1 staging + 6 external = 24 files (REQUIRED)
+   Group B: 3 staging (optional)
+   Group C: 9 staging (optional)
+   Group D: 2 docs
+==============================================================================
+ MINIMUM TO RUN A BATCH: all 24 Group-A files. If any one is missing the
+ pipeline will not import. Start there; add B/C/D as desired.
+==============================================================================
+ STARTUP SELF-CHECK (run in the new directory before the smoke test):
+   python -c "import production_runner" && echo "imports OK"
+ If this prints "imports OK", every required module resolved. If it raises
+ ModuleNotFoundError, the named module is the missing piece — almost always
+ one of the 6 EXTERNAL files not yet copied.
+==============================================================================

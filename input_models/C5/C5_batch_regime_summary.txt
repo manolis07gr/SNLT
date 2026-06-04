@@ -1,0 +1,62 @@
+====================================================================================================
+ regime_diagnostics — BATCH-LEVEL CROSS-EPOCH REGIME SUMMARY
+====================================================================================================
+
+Epochs processed: 33 (0.10d - 160.00d)
+
+Paper-grade evolution (rows = line, columns = epoch_d):
+
+line               0.1    0.3    0.4    0.5    0.6    0.7    0.8    0.9    1.0    2.0    3.0    4.0    5.0    6.0    7.0    8.0    9.0   10.0   20.0   30.0   40.0   50.0   60.0   70.0   80.0   90.0  100.0  110.0  120.0  130.0  140.0  150.0  160.0
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+Halpha_prod         A      A      A      A      A      A      A      A      A      A      A      A      A      A      A      A      A      A      A      A      A      A      A      A      A      A      A      A      A      A      A      A      A
+He_II_1640          R      R      R      R      R      R      R      R      R      R      R      R      R      R      R      R      R      R      R      R      R      R      R      R      R      R      R      R      R      R      R      R      R
+He_II_3203          A      A      A      A      A      A      A      A      A      A      A      A      A      A      A      A      A      A      A      A      A      A      A      A      A      A      A      A      A      A      A      A      A
+He_II_4686          A      A      A      A      A      A      A      A      A      A      A      A      A      A      A      A      A      A      A      A      A      A      A      A      A      A      A      A      A      A      A      A      A
+He_II_10124         A      A      A      A      A      A      A      A      A      A      A      A      A      A      A      A      A      A      A      A      A      A      A      A      A      A      A      A      A      A      A      A      A
+He_I_5876           C      C      C      C      C      C      C      C      C      B      B      B      B      B      C      C      C      C      B      A      A      A      A      A      A      A      A      A      C      C      C      C      B
+He_I_6678           B      B      B      B      B      B      B      B      B      B      B      B      B      B      B      B      B      B      A      A      A      A      A      A      A      A      A      A      B      B      B      B      B
+He_I_7065           B      B      B      B      B      B      B      B      B      B      B      B      B      B      B      B      B      B      B      A      A      A      A      A      A      A      A      A      C      B      B      B      B
+He_I_10830          C      C      C      C      C      C      C      C      C      C      B      B      B      C      C      C      C      C      B      A      A      A      A      A      A      A      A      A      C      C      C      C      C
+Halpha              A      A      A      A      A      A      A      A      A      A      A      A      A      A      A      A      A      A      A      A      A      A      A      A      A      A      A      A      B      B      B      B      B
+Hbeta               A      A      A      A      A      A      A      A      A      A      A      A      A      A      A      A      A      A      A      A      A      A      A      A      A      A      A      A      C      C      C      B      B
+Hgamma              A      A      A      A      A      A      A      A      A      A      A      A      A      A      A      A      A      A      A      A      A      A      A      A      A      A      A      A      B      B      B      B      B
+Palpha              A      A      A      A      A      A      A      A      A      A      A      A      A      A      A      A      A      A      A      A      A      A      A      A      A      A      A      A      C      C      B      B      B
+Pbeta               A      A      A      A      A      A      A      A      A      A      A      A      A      A      A      A      A      A      A      A      A      A      A      A      A      A      A      A      B      B      B      B      B
+
+Per-line trust summary across batch:
+----------------------------------------------------------------------------------------------------
+  Halpha_prod     A=33 B= 0 C= 0 R= 0  (of 33)  best τ at epoch 20.00d (τ=6.37e-08); worst at epoch 120.00d (τ=1.29e+05)
+  He_II_1640      A= 0 B= 0 C= 0 R=33  (of 33)  best τ at epoch 120.00d (τ=3.39e-30); worst at epoch 0.10d (τ=1.92e+01)
+  He_II_3203      A=33 B= 0 C= 0 R= 0  (of 33)  best τ at epoch 120.00d (τ=1.29e-30); worst at epoch 0.10d (τ=4.20e-07)
+  He_II_4686      A=33 B= 0 C= 0 R= 0  (of 33)  best τ at epoch 120.00d (τ=1.20e-29); worst at epoch 0.10d (τ=3.86e-06)
+  He_II_10124     A=33 B= 0 C= 0 R= 0  (of 33)  best τ at epoch 2.00d (τ=1.00e-30); worst at epoch 0.10d (τ=2.03e-07)
+  He_I_5876       A= 9 B= 7 C=17 R= 0  (of 33)  best τ at epoch 20.00d (τ=1.38e+00); worst at epoch 120.00d (τ=1.13e+05)
+  He_I_6678       A=10 B=23 C= 0 R= 0  (of 33)  best τ at epoch 20.00d (τ=9.56e-03); worst at epoch 120.00d (τ=5.35e+03)
+  He_I_7065       A= 9 B=23 C= 1 R= 0  (of 33)  best τ at epoch 20.00d (τ=1.87e-01); worst at epoch 120.00d (τ=1.54e+04)
+  He_I_10830      A= 9 B= 4 C=20 R= 0  (of 33)  best τ at epoch 20.00d (τ=3.86e+02); worst at epoch 120.00d (τ=1.83e+06)
+  Halpha          A=28 B= 5 C= 0 R= 0  (of 33)  best τ at epoch 20.00d (τ=6.37e-08); worst at epoch 120.00d (τ=1.29e+05)
+  Hbeta           A=28 B= 2 C= 3 R= 0  (of 33)  best τ at epoch 20.00d (τ=9.07e-09); worst at epoch 120.00d (τ=1.86e+04)
+  Hgamma          A=28 B= 5 C= 0 R= 0  (of 33)  best τ at epoch 20.00d (τ=3.06e-09); worst at epoch 120.00d (τ=6.22e+03)
+  Palpha          A=28 B= 3 C= 2 R= 0  (of 33)  best τ at epoch 20.00d (τ=1.70e-08); worst at epoch 120.00d (τ=2.21e+04)
+  Pbeta           A=28 B= 5 C= 0 R= 0  (of 33)  best τ at epoch 20.00d (τ=2.66e-09); worst at epoch 120.00d (τ=2.70e+03)
+
+Paper-recommendation overview:
+----------------------------------------------------------------------------------------------------
+  A-graded across all epochs:
+    ✓ Halpha_prod
+    ✓ He_II_3203
+    ✓ He_II_4686
+    ✓ He_II_10124
+  Mixed B/C/R (paper-worthy with explicit caveat):
+    • He_II_1640   (dominant grade: R)
+    • He_I_5876   (dominant grade: C)
+    • He_I_6678   (dominant grade: B)
+    • He_I_7065   (dominant grade: B)
+    • He_I_10830   (dominant grade: C)
+    • Halpha   (dominant grade: A)
+    • Hbeta   (dominant grade: A)
+    • Hgamma   (dominant grade: A)
+    • Palpha   (dominant grade: A)
+    • Pbeta   (dominant grade: A)
+
+====================================================================================================

@@ -1,0 +1,54 @@
+======================================================================
+ SNLT line / parameter-space analysis
+======================================================================
+ models: ['A1', 'A4', 'A5', 'A6', 'A7', 'B1', 'B4', 'B5', 'B6', 'B7', 'C1', 'C4', 'C5', 'C6', 'C7']
+ (H-line stats use the 15 H-bearing models)
+
+STRONGEST PEARSON CORRELATIONS (|r|):
+   Halpha_Hbeta     vs R_prog            r = -0.935
+   Halpha_Hgamma    vs R_prog            r = -0.934
+   L_Hbeta          vs E_SN              r = -0.869
+   L_Hgamma         vs E_SN              r = -0.869
+   L_Balmer_tot     vs E_SN              r = -0.868
+   L_Halpha         vs E_SN              r = -0.868
+   Halpha_Hbeta     vs f_Herich          r = +0.821
+   Halpha_Hgamma    vs f_Herich          r = +0.821
+   Halpha_Hbeta     vs M_ej              r = -0.794
+   Halpha_Hgamma    vs M_ej              r = -0.794
+   Halpha_Hgamma    vs E_SN              r = +0.658
+   Halpha_Hbeta     vs E_SN              r = +0.658
+
+PCA ON LINE-PROPERTY BLOCK (standardised; L,EW in log10):
+   explained variance: PC1=81.2%, PC2=11.2%, PC3=3.3%, PC4=2.9%
+
+   PC1 loadings (which line properties define it):
+      L_Hbeta          -0.348
+      L_Hgamma         -0.348
+      L_Balmer_tot     -0.348
+      L_Halpha         -0.348
+      Halpha_Hbeta     +0.340
+      Halpha_Hgamma    +0.340
+      L_He_tot         -0.324
+      EW_Halpha        -0.315
+      L_He1            -0.231
+      He1_He2          +0.161
+
+   PC1 correlation with physical parameters:
+      R_prog           r(PC1) = -0.961
+      f_Herich         r(PC1) = +0.861
+      M_ej             r(PC1) = -0.834
+      E_SN             r(PC1) = +0.628
+      M_csm_over_Mej   r(PC1) = +0.526
+      M_csm            r(PC1) = -0.029
+      f_Hrich          r(PC1) = -0.017
+
+   Best linear predictor  PC1 ~ physical params  (R²=0.989):
+      intercept        -0.000
+      M_csm            +0.123
+      M_ej             -0.877
+      M_csm_over_Mej   -0.240
+      E_SN             +1.015
+      R_prog           -1.124
+      f_Hrich          -0.211
+      f_Herich         +0.578
+   -> line behaviour is driven mainly by: R_prog, E_SN

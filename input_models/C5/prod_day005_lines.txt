@@ -1,0 +1,36 @@
+# Phase 5 multi-line summary (β-corrected single-shot RT + Hα-anchored empirical correction)
+# Snapshot: ?
+# Epoch: 5.0 d   T_phot: 17948.05011189174 K
+#
+# Production Hα (RT-NLTE iterated, gold-standard):
+#   L_line = 1.0373e+27 erg/s   peak F = 1.147 @ Δv = +342.7 km/s   EW = +1.07 Å
+#
+# Phase 5b strengths (no empirical anchor):
+#   H lines  = per-line recombination budget on the validated
+#              production-Hα scale (case-B decrement).
+#   He lines = he1/he2 NLTE first-principles; optically-thick
+#              He lines carry a single-shot escape correction.
+#   Quote the L_corr / EW_corr columns (NOT L_raw/EW_raw).
+#   CAVEAT: for saturated lines (τ≫1, common in the IIn
+#   regime) the single-shot PROFILE SHAPE is unreliable, so
+#   peak_F_corr and profile-integrated EW are factor-of-few;
+#   use the production Hα for the Hα shape.
+#
+# species  line          λ_rest[Å]   τ_med     L_raw[erg/s]      L_corr[erg/s]     EW_raw[Å]   EW_corr[Å]   peak F_corr   peak Δv[km/s]
+# ---------------------------------------------------------------------------------------------------------------------------------------
+# --- H I (Balmer + Paschen) ---
+  HI      Halpha           6562.81   1.49e-07       1.7853e+33       1.0373e+27      -3.63       -0.00        1.000     -3560.1
+  HI      Hbeta            4861.33   2.15e-08       4.6313e+32       3.7060e+26      -2.63       -0.00        1.000      +440.0
+  HI      Hgamma           4340.47   7.26e-09       1.8740e+32       1.7331e+26      +2.87       +0.00        1.000      +140.0
+  HI      Palpha          18751.01   5.23e-08       1.2815e+32       4.2229e+25      -9.46       -0.00        1.000     -1520.0
+  HI      Pbeta           12818.08   8.51e-09       5.5192e+31       3.1897e+25     -12.92       -0.00        1.000      -260.0
+# --- He I ---
+  HeI     He_I_5876        5875.62   5.64e+02       2.4401e+39       1.4178e+33      +3.76       +0.00        1.000     +2700.1
+  HeI     He_I_6678        6678.15   1.47e+01       2.6992e+39       1.5683e+33      +4.22       +0.00        1.000     -1040.0
+  HeI     He_I_7065        7065.19   7.67e+01       4.1419e+38       2.4066e+32      +2.96       +0.00        1.000     -1080.0
+  HeI     He_I_10830      10830.34   8.16e+03       1.3999e+39       8.1340e+32      -0.79       -0.00        1.000       +80.0
+# --- He II ---
+  HeII    He_II_1640       1640.42   4.15e-02       8.0931e+36       8.0931e+36      +2.49       +2.49        2.199     +1320.0
+  HeII    He_II_3203       3203.10   7.99e-12       5.5610e+35       5.5610e+35      -1.49       -1.49        1.890      +820.0
+  HeII    He_II_4686       4685.71   9.79e-11       1.7777e+36       1.7777e+36      +2.28       +2.28        1.645      -360.0
+  HeII    He_II_10124     10123.60   1.00e-30       1.0991e+35       1.0991e+35      -4.81       -4.81        1.487     +1500.0

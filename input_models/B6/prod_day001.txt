@@ -1,0 +1,20 @@
+==============================================================================
+ day001 (epoch 1.0d) — production RT-NLTE Hα profile
+==============================================================================
+
+snapshot: mesa.day001_post_Lbol_max.data
+runtime:  0.9 min
+RT iterations used: 2
+velocity smoothing: σ = 25.0 km/s
+
+L_line (converged): 5.143e+40 erg/s
+
+(metrics from smoothed F_norm)
+Peak  F = 7.266 at Δv = +29 km/s
+Trough F = 2.323 at Δv = -400 km/s
+Global peak F = 9.316 at Δv = -228 km/s
+
+RT iteration history (L_line, Δn_3_max):
+  iter 0: L_line = 5.120e+40, Δn_3_max = 0.00%
+  iter 1: L_line = 5.143e+40, Δn_3_max = 179881.90%
+  iter 2: L_line = 5.143e+40, Δn_3_max = 2.18%

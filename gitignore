@@ -1,0 +1,38 @@
+# macOS
+.DS_Store
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.ipynb_checkpoints/
+
+# Virtual environments
+venv/
+.env/
+.venv/
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+*.bak
+*.swp
+
+# Large generated outputs / analysis products
+*.out
+*.dat
+*.mod
+*.plt
+*.h5
+*.npy
+*.npz
+
+# Optional: exclude generated figures if you do not want them versioned
+# *.png
+# *.pdf
+
+# Optional: exclude local analysis results
+# input_models/model_comp/analysis/

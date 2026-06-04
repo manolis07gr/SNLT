@@ -1,0 +1,781 @@
+[batch] --skip-epochs: kept 16/30 snapshots (14 skipped)
+  skip: mesa.day000.1_post_Lbol_max.data  (epoch=0.1)
+  skip: mesa.day000.2_post_Lbol_max.data  (epoch=0.2)
+  skip: mesa.day000.3_post_Lbol_max.data  (epoch=0.3)
+  skip: mesa.day000.4_post_Lbol_max.data  (epoch=0.4)
+  skip: mesa.day000.5_post_Lbol_max.data  (epoch=0.5)
+  skip: mesa.day000.6_post_Lbol_max.data  (epoch=0.6)
+  skip: mesa.day000.7_post_Lbol_max.data  (epoch=0.7)
+  skip: mesa.day000.8_post_Lbol_max.data  (epoch=0.8)
+  skip: mesa.day000.9_post_Lbol_max.data  (epoch=0.9)
+  skip: mesa.day001_post_Lbol_max.data  (epoch=1.0)
+  skip: mesa.day002_post_Lbol_max.data  (epoch=2.0)
+  skip: mesa.day003_post_Lbol_max.data  (epoch=3.0)
+  skip: mesa.day004_post_Lbol_max.data  (epoch=4.0)
+  skip: mesa.day005_post_Lbol_max.data  (epoch=5.0)
+[batch] STELLA mode: 16 snapshots
+
+##############################################################################
+ BATCH MODE: processing 16 snapshots
+##############################################################################
+
+[1/16] Processing mesa.day010_post_Lbol_max.data...
+
+==============================================================================
+ PROCESS day010 (mesa.day010_post_Lbol_max.data)
+==============================================================================
+[stella_io] mesa.day010_post_Lbol_max.data: epoch=10.0d, n_zones=800
+  r:     3.87e+13 to 8.16e+14 cm
+  v:     258.9 to 8833.2 km/s (max 8833.2)
+  T_gas: 7298 to 103720 K
+  ne:    8.02e+08 to 4.15e+14 cm⁻³
+  tau_es total: 30248.52
+  ⟨X_H⟩ (emit zones): 0.6388
+  ⟨X_He⟩ (emit zones): 0.3421
+  v(r) has 50/799 reversals (shocks in CSM interaction). MC kernel uses local Doppler broadening, not strict Sobolev, so this is handled but flagged.
+[stella_truncate] 800 → 9 zones
+  R_phot = 6.722e+14 cm (τ_es = 0.6666666666666666)
+  T_phot = 9060 K (gas T at inner boundary)
+  L_phot = 1.309e+42 erg/s
+  Outer-region τ_es (from photosphere) = 0.64
+  Outer zones span r = 6.770e+14 to 8.157e+14 cm
+  T_color at thermalization (τ_es=10, ε~0.003): 15191 K
+  T_color sensitivity (T_gas at τ_es = 1, 3, 10, 30, 100, 300):
+    τ_es=     1:  T=  9508 K
+    τ_es=     3:  T= 11243 K
+    τ_es=    10:  T= 15191 K
+    τ_es=    30:  T= 20349 K
+    τ_es=   100:  T= 29147 K
+    τ_es=   300:  T= 38781 K
+  Outer v range: 7282 to 8833 km/s
+[load_snapshot] applying per-zone photoionization equilibrium (CLOUDY/CMFGEN-style)...
+[photoionize_csm] T_source auto-selected: 15191 K  [T_color_thermalization (τ_es=10 layer)]
+[photoionize_csm] solving with source spectrum:
+  T_source = 15191 K  (T_phot = 9060 K, L_phot = 1.309e+42 erg/s)
+  hν₀/kT = 10.39  ⇒  Wien suppression exp(-10.4) = 3.08e-05
+  L_normalize_to_snap = True  (f_norm = 7.633e-02)
+  R_phot = 6.722e+14 cm, n_zones = 9
+  G_BB(τ=0) = 1.036e+02  →  Γ_BB(R_phot) = 6.507e+02 s⁻¹
+  iter   0: max ΔX_HII = 4.43e-06,  ⟨X_HII⟩ = 1.000,  f(X_HII>0.5) = 1.00,  range [1.00e+00, 1.000]
+  → converged at iter 0 (Δ=4.43e-06 < tol=0.001)
+
+[photoionize_csm] RESULT:
+  τ_es (STELLA):     0.643  total along LOS
+  τ_es (photoionized): 0.828  total along LOS  (ratio 1.29×)
+  ⟨X_HII⟩ STELLA:    1.000  (range 1.00e+00 - 1.000)
+  ⟨X_HII⟩ photoeq:    1.000  (range 1.00e+00 - 1.000)
+  zones: 9/9 fully ionized (X>0.99); 0/9 neutral (X<0.01)
+[load_snapshot] format=stella, epoch=10.0d, n_zones=9
+  [STELLA] ⟨X_H⟩ in emit zones = 0.6388
+  [STELLA] epoch label is 'days post Lbol max' (not days since explosion)
+
+[1/2] RT-NLTE iteration (max_iter=8, tol=2.0%, damping=0.3)
+  [state-fix] T_phot: 1.000e+04 → 9.060e+03 (from snap['T_phot_inner'])
+  [STELLA] state.X_H overridden with per-zone composition: range 0.639 → 0.639, ⟨X_H⟩(emit)=0.639
+  [STELLA] state.X_He overridden with per-zone composition: range 0.342 → 0.342, ⟨X_He⟩(emit)=0.342
+  ionization_mode = saha, f_HI_max = 1.0
+[RT-iter] iter 0: baseline NLTE (no J_bar pumping)
+[RT-iter] iter 1: MC to measure J_bar, then re-solve NLTE
+[peel] zones 9/9, v_turb=per-zone, min=20, med=125, max=233 km/s, emit=continuum, 100000 packets, redistrib=aa_prd, n_steps_peel=40
+[peel] done in 0.80s  line=70919 thom=166441 esc=100000
+[peel] zones 9/9, v_turb=per-zone, min=20, med=125, max=233 km/s, emit=volumetric, 100000 packets, redistrib=aa_prd, n_steps_peel=40
+[peel] done in 2.67s  line=3048925 thom=164613 esc=100000
+  [measure_jbar] J_bar(Hα): 8/9 zones with non-trivial pumping. Range: 4.328e-06 to 6.477e-05, median: 9.275e-06 erg/s/cm²/sr/Hz
+           L_line = 1.677e+40 erg/s, J_bar_max = 6.477e-05 erg/s/cm²/sr/Hz, Δn_3_max = 801.7% (damping=0.3)
+[RT-iter] iter 2: MC to measure J_bar, then re-solve NLTE
+[peel] zones 9/9, v_turb=per-zone, min=20, med=125, max=233 km/s, emit=continuum, 100000 packets, redistrib=aa_prd, n_steps_peel=40
+[peel] done in 0.65s  line=31830 thom=165640 esc=100000
+[peel] zones 9/9, v_turb=per-zone, min=20, med=125, max=233 km/s, emit=volumetric, 100000 packets, redistrib=aa_prd, n_steps_peel=40
+[peel] done in 1.84s  line=1288327 thom=162373 esc=100000
+  [measure_jbar] J_bar(Hα): 8/9 zones with non-trivial pumping. Range: 1.110e-05 to 1.234e-04, median: 2.152e-05 erg/s/cm²/sr/Hz
+           L_line = 1.701e+40 erg/s, J_bar_max = 8.236e-05 erg/s/cm²/sr/Hz, Δn_3_max = 4.9% (damping=0.3)
+[RT-iter] iter 3: MC to measure J_bar, then re-solve NLTE
+[peel] zones 9/9, v_turb=per-zone, min=20, med=125, max=233 km/s, emit=continuum, 100000 packets, redistrib=aa_prd, n_steps_peel=40
+[peel] done in 0.65s  line=29994 thom=167097 esc=100000
+[peel] zones 9/9, v_turb=per-zone, min=20, med=125, max=233 km/s, emit=volumetric, 100000 packets, redistrib=aa_prd, n_steps_peel=40
+[peel] done in 1.75s  line=1172327 thom=162733 esc=100000
+  [measure_jbar] J_bar(Hα): 8/9 zones with non-trivial pumping. Range: 1.228e-05 to 1.167e-04, median: 2.331e-05 erg/s/cm²/sr/Hz
+           L_line = 1.713e+40 erg/s, J_bar_max = 9.265e-05 erg/s/cm²/sr/Hz, Δn_3_max = 2.2% (damping=0.3)
+[RT-iter] iter 4: MC to measure J_bar, then re-solve NLTE
+[peel] zones 9/9, v_turb=per-zone, min=20, med=125, max=233 km/s, emit=continuum, 100000 packets, redistrib=aa_prd, n_steps_peel=40
+[peel] done in 0.66s  line=31428 thom=165487 esc=100000
+[peel] zones 9/9, v_turb=per-zone, min=20, med=125, max=233 km/s, emit=volumetric, 100000 packets, redistrib=aa_prd, n_steps_peel=40
+[peel] done in 1.70s  line=1116400 thom=161163 esc=100000
+  [measure_jbar] J_bar(Hα): 8/9 zones with non-trivial pumping. Range: 1.262e-05 to 1.151e-04, median: 2.393e-05 erg/s/cm²/sr/Hz
+           L_line = 1.720e+40 erg/s, J_bar_max = 9.939e-05 erg/s/cm²/sr/Hz, Δn_3_max = 1.4% (damping=0.3)
+[RT-iter] converged at iteration 4 (Δn_3_max = 1.35% < 2.0%)
+[he2_nlte] X_HeIII=6.73e-17, X_HeII=1.000, n_HeIII=8.63e-08, n_HeII=1.28e+09, τ_med(4686)=9.4e-20, (1640)=2.2e-12, (3203)=7.0e-21, (10124)=1.0e-30  [32 iters]
+[he1_nlte] n_HeI=4.32e+03, n_HeII=1.28e+09, NLTE/LTE(2³S/1¹S)=9.6e+13, τ_med(10830)=1.4e+05, (5876)=8.9e+04, (7065)=1.2e+04, (6678)=0.0e+00  [13 iters]
+
+  [auto-calibration] L_line/L_cont_band = 0.223 → using 'theoretical_ew'
+
+[2/2] Production MC: 400,000 packets (calibration=theoretical_ew)
+[abs] R_phot = 6.722e+14 cm, T_phot = 9060 K
+[abs] L_cont_src (4700-8450 AA) = 4.133e+41 erg/s
+[abs] L_line = 1.720e+40 erg/s, ratio L_line/L_cont = 4.163e-02
+[abs] per-packet luminosities: cont = 2.067e+36, vol = 8.602e+34
+[abs] continuum peel-off, N=200000, L_per_pkt=2.067e+36
+[peel] zones 9/9, v_turb=per-zone, min=20, med=125, max=233 km/s, emit=continuum, 200000 packets, redistrib=aa_prd, n_steps_peel=40
+[peel] done in 1.30s  line=56338 thom=332935 esc=200000
+[abs] volumetric peel-off, N=200000, L_per_pkt=8.602e+34
+[peel] zones 9/9, v_turb=per-zone, min=20, med=125, max=233 km/s, emit=volumetric, 200000 packets, redistrib=aa_prd, n_steps_peel=40
+[peel] done in 3.34s  line=2157456 thom=322590 esc=200000
+[abs] F_cont_baseline_peel (far wing): 5.252e+36 erg/s/cm²/AA
+[abs] F_cont_BB_baseline (diluted BB):  1.354e+37 erg/s/cm²/AA
+[abs] using baseline:                   5.252e+36 (mode=theoretical_ew)
+[abs] EW peel uncalibrated:        207.05 AA
+[abs] EW theoretical (L_line/L_cont × out_band): 167.40 AA
+[abs] calibration mode: theoretical_ew, factor = 8.0848e-01
+[abs] R_phot = 6.722e+14 cm, T_phot = 9060 K
+[abs] L_cont_src (4700-8450 AA) = 4.133e+41 erg/s
+[abs] L_line = 1.720e+40 erg/s, ratio L_line/L_cont = 4.163e-02
+[abs] per-packet luminosities: cont = 2.067e+36, vol = 8.602e+34
+[abs] continuum peel-off, N=200000, L_per_pkt=2.067e+36
+[peel] zones 9/9, v_turb=per-zone, min=20, med=125, max=233 km/s, emit=continuum, 200000 packets, redistrib=aa_prd, n_steps_peel=40
+[peel] done in 1.31s  line=59981 thom=331983 esc=200000
+[abs] volumetric peel-off, N=200000, L_per_pkt=8.602e+34
+[peel] zones 9/9, v_turb=per-zone, min=20, med=125, max=233 km/s, emit=volumetric, 200000 packets, redistrib=aa_prd, n_steps_peel=40
+[peel] done in 3.36s  line=2161861 thom=322935 esc=200000
+[abs] F_cont_baseline_peel (far wing): 5.257e+36 erg/s/cm²/AA
+[abs] F_cont_BB_baseline (diluted BB):  1.354e+37 erg/s/cm²/AA
+[abs] using baseline:                   5.257e+36 (mode=theoretical_ew)
+[abs] EW peel uncalibrated:        207.89 AA
+[abs] EW theoretical (L_line/L_cont × out_band): 167.40 AA
+[abs] calibration mode: theoretical_ew, factor = 8.0524e-01
+
+[smooth] Gaussian σ=25.0 km/s (0.88 bins) applied to F_norm
+
+[phase5] Computing He multi-line profiles (200,000 packets/line)
+[phase5] prod_Ha cross-check: L_line = 1.720e+40 erg/s, EW = -175.22 Å, peak F = 1.68 @ +371 km/s
+[phase5_cont] T_phot = 9060 K, R_phot = 6.722e+14 cm, W = 0.50
+[phase5_cont] line             λ_rest    L_cont_band    F_cont(λ_0)  x=hc/λkT
+[phase5_cont] ------------ ---------- -------------- --------------  ------
+[phase5_cont] He_II_1640       1640.4      3.064e+39      9.840e+06  x =  9.68
+[phase5_cont] He_II_3203       3203.1      2.387e+40      3.927e+07  x =  4.96
+[phase5_cont] He_II_4686       4685.7      2.572e+40      2.892e+07  x =  3.39
+[phase5_cont] He_II_10124     10123.6      8.900e+39      4.630e+06  x =  1.57
+[phase5_cont] He_I_5876        5875.6      2.140e+40      1.919e+07  x =  2.70
+[phase5_cont] He_I_6678        6678.1      1.825e+40      1.440e+07  x =  2.38
+[phase5_cont] He_I_7065        7065.2      1.684e+40      1.255e+07  x =  2.25
+[phase5_cont] He_I_10830      10830.3      7.747e+39      3.767e+06  x =  1.47
+[phase5_cont] Halpha           6562.8      1.869e+40      1.500e+07  x =  2.42
+[phase5_cont] Hbeta            4861.3      2.520e+40      2.732e+07  x =  3.27
+[phase5_cont] Hgamma           4340.5      2.646e+40      3.212e+07  x =  3.66
+[phase5_cont] Palpha          18751.0      2.157e+39      6.057e+05  x =  0.85
+[phase5_cont] Pbeta           12818.1      5.368e+39      2.205e+06  x =  1.24
+
+[phase5] Computing 13 line profiles (200000 packets each)
+[peel] zones 9/9, v_turb=per-zone, min=20, med=125, max=233 km/s, emit=continuum, 200000 packets, redistrib=aa_prd, n_steps_peel=40
+[peel] done in 1.27s  line=0 thom=330351 esc=200000
+[peel] zones 9/9, v_turb=per-zone, min=20, med=125, max=233 km/s, emit=volumetric, 200000 packets, redistrib=aa_prd, n_steps_peel=40
+[peel] done in 1.40s  line=0 thom=330080 esc=200000
+[phase5] He_II_1640  : τ_med=2.16e-12, L_line=3.715e+24, EW=  +1.51 AA, peak F=1.50 @ +4100 km/s
+[peel] zones 9/9, v_turb=per-zone, min=20, med=125, max=233 km/s, emit=continuum, 200000 packets, redistrib=aa_prd, n_steps_peel=40
+[peel] done in 1.26s  line=0 thom=329449 esc=200000
+[peel] zones 9/9, v_turb=per-zone, min=20, med=125, max=233 km/s, emit=volumetric, 200000 packets, redistrib=aa_prd, n_steps_peel=40
+[peel] done in 1.39s  line=0 thom=330636 esc=200000
+[phase5] He_II_3203  : τ_med=7.04e-21, L_line=2.384e+23, EW=  +3.44 AA, peak F=1.34 @ -160 km/s
+[peel] zones 9/9, v_turb=per-zone, min=20, med=125, max=233 km/s, emit=continuum, 200000 packets, redistrib=aa_prd, n_steps_peel=40
+[peel] done in 1.27s  line=0 thom=330623 esc=200000
+[peel] zones 9/9, v_turb=per-zone, min=20, med=125, max=233 km/s, emit=volumetric, 200000 packets, redistrib=aa_prd, n_steps_peel=40
+[peel] done in 1.49s  line=0 thom=331250 esc=200000
+[phase5] He_II_4686  : τ_med=9.43e-20, L_line=5.500e+23, EW=  +0.23 AA, peak F=1.27 @ +340 km/s
+[peel] zones 9/9, v_turb=per-zone, min=20, med=125, max=233 km/s, emit=continuum, 200000 packets, redistrib=aa_prd, n_steps_peel=40
+[peel] done in 1.27s  line=0 thom=328139 esc=200000
+[peel] zones 9/9, v_turb=per-zone, min=20, med=125, max=233 km/s, emit=volumetric, 200000 packets, redistrib=aa_prd, n_steps_peel=40
+[peel] done in 1.39s  line=0 thom=331468 esc=200000
+[phase5] He_II_10124 : τ_med=1.00e-30, L_line=4.700e+22, EW=  +0.02 AA, peak F=1.26 @ -420 km/s
+[peel] zones 9/9, v_turb=per-zone, min=20, med=125, max=233 km/s, emit=continuum, 200000 packets, redistrib=aa_prd, n_steps_peel=40
+[peel] done in 1.77s  line=1317233 thom=339497 esc=200000
+[peel] zones 9/9, v_turb=per-zone, min=20, med=125, max=233 km/s, emit=volumetric, 200000 packets, redistrib=aa_prd, n_steps_peel=40
+[peel] done in 9.21s  line=21323368 thom=362081 esc=200000
+[phase5] He_I_5876   : τ_med=8.91e+04, L_line=1.279e+40, EW=-125.50 AA, peak F=2.28 @ -360 km/s
+[peel] zones 9/9, v_turb=per-zone, min=20, med=125, max=233 km/s, emit=continuum, 200000 packets, redistrib=aa_prd, n_steps_peel=40
+[peel] done in 1.27s  line=5 thom=329551 esc=200000
+[peel] zones 9/9, v_turb=per-zone, min=20, med=125, max=233 km/s, emit=volumetric, 200000 packets, redistrib=aa_prd, n_steps_peel=40
+[peel] done in 1.45s  line=66 thom=362486 esc=200000
+[phase5] He_I_6678   : τ_med=0.00e+00, L_line=1.241e+38, EW=  +3.62 AA, peak F=1.26 @ +1060 km/s
+[peel] zones 9/9, v_turb=per-zone, min=20, med=125, max=233 km/s, emit=continuum, 200000 packets, redistrib=aa_prd, n_steps_peel=40
+[peel] done in 1.71s  line=1012242 thom=339346 esc=200000
+[peel] zones 9/9, v_turb=per-zone, min=20, med=125, max=233 km/s, emit=volumetric, 200000 packets, redistrib=aa_prd, n_steps_peel=40
+[peel] done in 7.63s  line=15647396 thom=363599 esc=200000
+[phase5] He_I_7065   : τ_med=1.20e+04, L_line=4.029e+39, EW= -77.33 AA, peak F=1.88 @ +920 km/s
+[peel] zones 9/9, v_turb=per-zone, min=20, med=125, max=233 km/s, emit=continuum, 200000 packets, redistrib=aa_prd, n_steps_peel=40
+[peel] done in 2.04s  line=2049343 thom=343898 esc=200000
+[peel] zones 9/9, v_turb=per-zone, min=20, med=125, max=233 km/s, emit=volumetric, 200000 packets, redistrib=aa_prd, n_steps_peel=40
+[peel] done in 9.43s  line=21387218 thom=333917 esc=200000
+[phase5] He_I_10830  : τ_med=1.44e+05, L_line=1.673e+40, EW=-694.39 AA, peak F=4.04 @ +180 km/s
+[peel] zones 9/9, v_turb=per-zone, min=20, med=125, max=233 km/s, emit=continuum, 200000 packets, redistrib=aa_prd, n_steps_peel=40
+[peel] done in 1.41s  line=172893 thom=336309 esc=200000
+[peel] zones 9/9, v_turb=per-zone, min=20, med=125, max=233 km/s, emit=volumetric, 200000 packets, redistrib=aa_prd, n_steps_peel=40
+[peel] done in 4.17s  line=3920486 thom=355985 esc=200000
+[phase5] Halpha      : τ_med=6.97e+01, L_line=8.088e+40, EW=-796.60 AA, peak F=7.42 @ -4940 km/s
+[peel] zones 9/9, v_turb=per-zone, min=20, med=125, max=233 km/s, emit=continuum, 200000 packets, redistrib=aa_prd, n_steps_peel=40
+[peel] done in 1.33s  line=60956 thom=333964 esc=200000
+[peel] zones 9/9, v_turb=per-zone, min=20, med=125, max=233 km/s, emit=volumetric, 200000 packets, redistrib=aa_prd, n_steps_peel=40
+[peel] done in 3.54s  line=2126948 thom=369126 esc=200000
+[phase5] Hbeta       : τ_med=1.43e+01, L_line=1.637e+39, EW=  -8.33 AA, peak F=1.35 @ +160 km/s
+[peel] zones 9/9, v_turb=per-zone, min=20, med=125, max=233 km/s, emit=continuum, 200000 packets, redistrib=aa_prd, n_steps_peel=40
+[peel] done in 1.30s  line=27321 thom=331000 esc=200000
+[peel] zones 9/9, v_turb=per-zone, min=20, med=125, max=233 km/s, emit=volumetric, 200000 packets, redistrib=aa_prd, n_steps_peel=40
+[peel] done in 2.55s  line=931888 thom=363079 esc=200000
+[phase5] Hgamma      : τ_med=4.80e+00, L_line=5.506e+38, EW=  -1.81 AA, peak F=1.36 @ -420 km/s
+[peel] zones 9/9, v_turb=per-zone, min=20, med=125, max=233 km/s, emit=continuum, 200000 packets, redistrib=aa_prd, n_steps_peel=40
+[peel] done in 1.51s  line=427424 thom=339144 esc=200000
+[peel] zones 9/9, v_turb=per-zone, min=20, med=125, max=233 km/s, emit=volumetric, 200000 packets, redistrib=aa_prd, n_steps_peel=40
+[peel] done in 3.30s  line=3180962 thom=309900 esc=200000
+[phase5] Palpha      : τ_med=2.89e+02, L_line=5.370e+37, EW= -60.36 AA, peak F=1.41 @ +1580 km/s
+[peel] zones 9/9, v_turb=per-zone, min=20, med=125, max=233 km/s, emit=continuum, 200000 packets, redistrib=aa_prd, n_steps_peel=40
+[peel] done in 1.40s  line=181607 thom=333186 esc=200000
+[peel] zones 9/9, v_turb=per-zone, min=20, med=125, max=233 km/s, emit=volumetric, 200000 packets, redistrib=aa_prd, n_steps_peel=40
+[peel] done in 2.55s  line=1619975 thom=306453 esc=200000
+[phase5] Pbeta       : τ_med=3.57e+01, L_line=4.462e+37, EW= -10.71 AA, peak F=1.31 @ +1440 km/s
+[phase5b] Hα-anchored correction factor R = L_prod / L_phase5 = 0.2127
+[phase5b] Applying R to L_line, EW, (F_norm − 1) for all non-Hα lines.
+[phase5] Saved prod_day010_lines.npz, .txt, .png
+[regime] Saved prod_day010_regime.txt  (6 grade-A, 4 grade-B, 3 grade-C, 1 grade-R)
+  Saved prod_day010_hydro.png
+  Saved prod_day010_ionization.png
+
+Total runtime: 0.3 min (4 RT iters, 800,000 total packets)
+
+[2/16] Processing mesa.day020_post_Lbol_max.data...
+
+==============================================================================
+ PROCESS day020 (mesa.day020_post_Lbol_max.data)
+==============================================================================
+[stella_io] mesa.day020_post_Lbol_max.data: epoch=20.0d, n_zones=800
+  r:     5.54e+13 to 1.60e+15 cm
+  v:     185.2 to 8860.7 km/s (max 8860.7)
+  T_gas: 4791 to 58123 K
+  ne:    1.87e+07 to 6.87e+13 cm⁻³
+  tau_es total: 9688.32
+  ⟨X_H⟩ (emit zones): 0.6388
+  ⟨X_He⟩ (emit zones): 0.3421
+  v(r) has 7/799 reversals (shocks in CSM interaction). MC kernel uses local Doppler broadening, not strict Sobolev, so this is handled but flagged.
+[stella_truncate] 800 → 37 zones
+  R_phot = 1.103e+15 cm (τ_es = 0.6666666666666666)
+  T_phot = 6670 K (gas T at inner boundary)
+  L_phot = 1.140e+42 erg/s
+  Outer-region τ_es (from photosphere) = 0.65
+  Outer zones span r = 1.107e+15 to 1.602e+15 cm
+  T_color at thermalization (τ_es=10, ε~0.003): 10280 K
+  T_color sensitivity (T_gas at τ_es = 1, 3, 10, 30, 100, 300):
+    τ_es=     1:  T=  6920 K
+    τ_es=     3:  T=  8092 K
+    τ_es=    10:  T= 10280 K
+    τ_es=    30:  T= 14424 K
+    τ_es=   100:  T= 20854 K
+    τ_es=   300:  T= 28460 K
+  Outer v range: 6083 to 8861 km/s
+[load_snapshot] applying per-zone photoionization equilibrium (CLOUDY/CMFGEN-style)...
+[photoionize_csm] T_source auto-selected: 10280 K  [T_color_thermalization (τ_es=10 layer)]
+[photoionize_csm] solving with source spectrum:
+  T_source = 10280 K  (T_phot = 6670 K, L_phot = 1.140e+42 erg/s)
+  hν₀/kT = 15.35  ⇒  Wien suppression exp(-15.4) = 2.15e-07
+  L_normalize_to_snap = True  (f_norm = 1.176e-01)
+  R_phot = 1.103e+15 cm, n_zones = 37
+  G_BB(τ=0) = 7.751e-01  →  Γ_BB(R_phot) = 4.870e+00 s⁻¹
+  iter   0: max ΔX_HII = 3.14e-01,  ⟨X_HII⟩ = 0.305,  f(X_HII>0.5) = 0.03,  range [8.46e-02, 0.887]
+  iter   1: max ΔX_HII = 1.89e-01,  ⟨X_HII⟩ = 0.194,  f(X_HII>0.5) = 0.03,  range [5.08e-02, 0.932]
+  iter   2: max ΔX_HII = 1.13e-01,  ⟨X_HII⟩ = 0.127,  f(X_HII>0.5) = 0.03,  range [3.05e-02, 0.959]
+  iter   3: max ΔX_HII = 6.79e-02,  ⟨X_HII⟩ = 0.087,  f(X_HII>0.5) = 0.03,  range [1.83e-02, 0.975]
+  iter   5: max ΔX_HII = 2.44e-02,  ⟨X_HII⟩ = 0.049,  f(X_HII>0.5) = 0.03,  range [6.58e-03, 0.990]
+  iter  10: max ΔX_HII = 1.90e-03,  ⟨X_HII⟩ = 0.029,  f(X_HII>0.5) = 0.03,  range [5.12e-04, 0.998]
+  → converged at iter 12 (Δ=6.84e-04 < tol=0.001)
+
+[photoionize_csm] RESULT:
+  τ_es (STELLA):     0.648  total along LOS
+  τ_es (photoionized): 0.047  total along LOS  (ratio 0.07×)
+  ⟨X_HII⟩ STELLA:    0.490  (range 1.41e-01 - 0.813)
+  ⟨X_HII⟩ photoeq:    0.028  (range 1.84e-04 - 0.998)
+  zones: 1/37 fully ionized (X>0.99); 36/37 neutral (X<0.01)
+[load_snapshot] format=stella, epoch=20.0d, n_zones=37
+  [STELLA] ⟨X_H⟩ in emit zones = 0.6388
+  [STELLA] epoch label is 'days post Lbol max' (not days since explosion)
+
+[1/2] RT-NLTE iteration (max_iter=8, tol=2.0%, damping=0.3)
+  [state-fix] T_phot: 1.000e+04 → 6.670e+03 (from snap['T_phot_inner'])
+  [STELLA] state.X_H overridden with per-zone composition: range 0.639 → 0.639, ⟨X_H⟩(emit)=0.639
+  [STELLA] state.X_He overridden with per-zone composition: range 0.342 → 0.342, ⟨X_He⟩(emit)=0.342
+  ionization_mode = saha, f_HI_max = 1.0
+[RT-iter] iter 0: baseline NLTE (no J_bar pumping)
+[RT-iter] iter 1: MC to measure J_bar, then re-solve NLTE
+[peel] zones 37/37, v_turb=per-zone, min=20, med=322, max=458 km/s, emit=continuum, 100000 packets, redistrib=aa_prd, n_steps_peel=40
+[peel] done in 0.93s  line=62086 thom=4755 esc=100000
+[peel] zones 37/37, v_turb=per-zone, min=20, med=322, max=458 km/s, emit=volumetric, 100000 packets, redistrib=aa_prd, n_steps_peel=40
+[peel] done in 3.76s  line=4387651 thom=4076 esc=100000
+  [measure_jbar] J_bar(Hα): 36/37 zones with non-trivial pumping. Range: 1.608e-07 to 1.652e-05, median: 2.365e-06 erg/s/cm²/sr/Hz
+           L_line = 6.072e+39 erg/s, J_bar_max = 1.652e-05 erg/s/cm²/sr/Hz, Δn_3_max = 356.2% (damping=0.3)
+[RT-iter] iter 2: MC to measure J_bar, then re-solve NLTE
+[peel] zones 37/37, v_turb=per-zone, min=20, med=322, max=458 km/s, emit=continuum, 100000 packets, redistrib=aa_prd, n_steps_peel=40
+[peel] done in 0.93s  line=54742 thom=4673 esc=100000
+[peel] zones 37/37, v_turb=per-zone, min=20, med=322, max=458 km/s, emit=volumetric, 100000 packets, redistrib=aa_prd, n_steps_peel=40
+[peel] done in 3.66s  line=4269159 thom=4608 esc=100000
+  [measure_jbar] J_bar(Hα): 36/37 zones with non-trivial pumping. Range: 2.478e-07 to 1.779e-05, median: 2.145e-06 erg/s/cm²/sr/Hz
+           L_line = 6.090e+39 erg/s, J_bar_max = 1.690e-05 erg/s/cm²/sr/Hz, Δn_3_max = 3.2% (damping=0.3)
+[RT-iter] iter 3: MC to measure J_bar, then re-solve NLTE
+[peel] zones 37/37, v_turb=per-zone, min=20, med=322, max=458 km/s, emit=continuum, 100000 packets, redistrib=aa_prd, n_steps_peel=40
+[peel] done in 0.93s  line=53798 thom=4612 esc=100000
+[peel] zones 37/37, v_turb=per-zone, min=20, med=322, max=458 km/s, emit=volumetric, 100000 packets, redistrib=aa_prd, n_steps_peel=40
+[peel] done in 3.68s  line=4254703 thom=4889 esc=100000
+  [measure_jbar] J_bar(Hα): 36/37 zones with non-trivial pumping. Range: 2.549e-07 to 1.756e-05, median: 1.924e-06 erg/s/cm²/sr/Hz
+           L_line = 6.103e+39 erg/s, J_bar_max = 1.710e-05 erg/s/cm²/sr/Hz, Δn_3_max = 2.2% (damping=0.3)
+[RT-iter] iter 4: MC to measure J_bar, then re-solve NLTE
+[peel] zones 37/37, v_turb=per-zone, min=20, med=322, max=458 km/s, emit=continuum, 100000 packets, redistrib=aa_prd, n_steps_peel=40
+[peel] done in 0.93s  line=56528 thom=4654 esc=100000
+[peel] zones 37/37, v_turb=per-zone, min=20, med=322, max=458 km/s, emit=volumetric, 100000 packets, redistrib=aa_prd, n_steps_peel=40
+[peel] done in 3.66s  line=4248802 thom=4821 esc=100000
+  [measure_jbar] J_bar(Hα): 36/37 zones with non-trivial pumping. Range: 2.624e-07 to 1.795e-05, median: 2.395e-06 erg/s/cm²/sr/Hz
+           L_line = 6.113e+39 erg/s, J_bar_max = 1.735e-05 erg/s/cm²/sr/Hz, Δn_3_max = 1.6% (damping=0.3)
+[RT-iter] converged at iteration 4 (Δn_3_max = 1.59% < 2.0%)
+[he2_nlte] X_HeIII=1.89e-32, X_HeII=1.000, n_HeIII=1.24e-23, n_HeII=6.55e+08, τ_med(4686)=1.9e-30, (1640)=5.1e-30, (3203)=1.0e-30, (10124)=4.9e-30  [33 iters]
+[he1_nlte] n_HeI=5.84e+08, n_HeII=4.29e+05, NLTE/LTE(2³S/1¹S)=2.5e+09, τ_med(10830)=1.7e+02, (5876)=9.7e-04, (7065)=1.3e-04, (6678)=1.0e-07  [13 iters]
+
+  [auto-calibration] L_line/L_cont_band = 0.067 → using 'theoretical_ew'
+
+[2/2] Production MC: 400,000 packets (calibration=theoretical_ew)
+[abs] R_phot = 1.103e+15 cm, T_phot = 6670 K
+[abs] L_cont_src (4700-8450 AA) = 4.571e+41 erg/s
+[abs] L_line = 6.113e+39 erg/s, ratio L_line/L_cont = 1.337e-02
+[abs] per-packet luminosities: cont = 2.285e+36, vol = 3.056e+34
+[abs] continuum peel-off, N=200000, L_per_pkt=2.285e+36
+[peel] zones 37/37, v_turb=per-zone, min=20, med=322, max=458 km/s, emit=continuum, 200000 packets, redistrib=aa_prd, n_steps_peel=40
+[peel] done in 1.86s  line=108966 thom=9118 esc=200000
+[abs] volumetric peel-off, N=200000, L_per_pkt=3.056e+34
+[peel] zones 37/37, v_turb=per-zone, min=20, med=322, max=458 km/s, emit=volumetric, 200000 packets, redistrib=aa_prd, n_steps_peel=40
+[peel] done in 7.28s  line=8472536 thom=9531 esc=200000
+[abs] F_cont_baseline_peel (far wing): 4.751e+36 erg/s/cm²/AA
+[abs] F_cont_BB_baseline (diluted BB):  1.448e+37 erg/s/cm²/AA
+[abs] using baseline:                   4.751e+36 (mode=theoretical_ew)
+[abs] EW peel uncalibrated:        76.44 AA
+[abs] EW theoretical (L_line/L_cont × out_band): 50.44 AA
+[abs] calibration mode: theoretical_ew, factor = 6.5992e-01
+[abs] R_phot = 1.103e+15 cm, T_phot = 6670 K
+[abs] L_cont_src (4700-8450 AA) = 4.571e+41 erg/s
+[abs] L_line = 6.113e+39 erg/s, ratio L_line/L_cont = 1.337e-02
+[abs] per-packet luminosities: cont = 2.285e+36, vol = 3.056e+34
+[abs] continuum peel-off, N=200000, L_per_pkt=2.285e+36
+[peel] zones 37/37, v_turb=per-zone, min=20, med=322, max=458 km/s, emit=continuum, 200000 packets, redistrib=aa_prd, n_steps_peel=40
+[peel] done in 1.86s  line=106544 thom=9074 esc=200000
+[abs] volumetric peel-off, N=200000, L_per_pkt=3.056e+34
+[peel] zones 37/37, v_turb=per-zone, min=20, med=322, max=458 km/s, emit=volumetric, 200000 packets, redistrib=aa_prd, n_steps_peel=40
+[peel] done in 7.28s  line=8486681 thom=9794 esc=200000
+[abs] F_cont_baseline_peel (far wing): 4.764e+36 erg/s/cm²/AA
+[abs] F_cont_BB_baseline (diluted BB):  1.448e+37 erg/s/cm²/AA
+[abs] using baseline:                   4.764e+36 (mode=theoretical_ew)
+[abs] EW peel uncalibrated:        76.50 AA
+[abs] EW theoretical (L_line/L_cont × out_band): 50.44 AA
+[abs] calibration mode: theoretical_ew, factor = 6.5940e-01
+
+[smooth] Gaussian σ=25.0 km/s (0.88 bins) applied to F_norm
+
+[phase5] Computing He multi-line profiles (200,000 packets/line)
+[phase5] prod_Ha cross-check: L_line = 6.113e+39 erg/s, EW = -70.90 Å, peak F = 1.51 @ +57 km/s
+[phase5_cont] T_phot = 6670 K, R_phot = 1.103e+15 cm, W = 0.50
+[phase5_cont] line             λ_rest    L_cont_band    F_cont(λ_0)  x=hc/λkT
+[phase5_cont] ------------ ---------- -------------- --------------  ------
+[phase5_cont] He_II_1640       1640.4      2.576e+38      3.064e+05  x = 13.15
+[phase5_cont] He_II_3203       3203.1      1.082e+40      6.605e+06  x =  6.73
+[phase5_cont] He_II_4686       4685.7      2.007e+40      8.379e+06  x =  4.60
+[phase5_cont] He_II_10124     10123.6      1.228e+40      2.371e+06  x =  2.13
+[phase5_cont] He_I_5876        5875.6      2.096e+40      6.974e+06  x =  3.67
+[phase5_cont] He_I_6678        6678.1      1.981e+40      5.800e+06  x =  3.23
+[phase5_cont] He_I_7065        7065.2      1.903e+40      5.265e+06  x =  3.05
+[phase5_cont] He_I_10830      10830.3      1.099e+40      1.984e+06  x =  1.99
+[phase5_cont] Halpha           6562.8      2.002e+40      5.965e+06  x =  3.29
+[phase5_cont] Hbeta            4861.3      2.050e+40      8.247e+06  x =  4.44
+[phase5_cont] Hgamma           4340.5      1.885e+40      8.492e+06  x =  4.97
+[phase5_cont] Palpha          18751.0      3.586e+39      3.737e+05  x =  1.15
+[phase5_cont] Pbeta           12818.1      8.094e+39      1.234e+06  x =  1.68
+
+[phase5] Computing 13 line profiles (200000 packets each)
+[peel] zones 37/37, v_turb=per-zone, min=20, med=322, max=458 km/s, emit=continuum, 200000 packets, redistrib=aa_prd, n_steps_peel=40
+[peel] done in 1.79s  line=0 thom=9124 esc=200000
+[peel] zones 37/37, v_turb=per-zone, min=20, med=322, max=458 km/s, emit=volumetric, 200000 packets, redistrib=aa_prd, n_steps_peel=40
+[peel] done in 2.12s  line=0 thom=14780 esc=200000
+[phase5] He_II_1640  : τ_med=5.15e-30, L_line=5.933e+23, EW=  +0.17 AA, peak F=1.89 @ +3040 km/s
+[peel] zones 37/37, v_turb=per-zone, min=20, med=322, max=458 km/s, emit=continuum, 200000 packets, redistrib=aa_prd, n_steps_peel=40
+[peel] done in 1.79s  line=0 thom=9073 esc=200000
+[peel] zones 37/37, v_turb=per-zone, min=20, med=322, max=458 km/s, emit=volumetric, 200000 packets, redistrib=aa_prd, n_steps_peel=40
+[peel] done in 2.12s  line=0 thom=14879 esc=200000
+[phase5] He_II_3203  : τ_med=1.00e-30, L_line=3.801e+22, EW=  +0.54 AA, peak F=1.60 @ +600 km/s
+[peel] zones 37/37, v_turb=per-zone, min=20, med=322, max=458 km/s, emit=continuum, 200000 packets, redistrib=aa_prd, n_steps_peel=40
+[peel] done in 1.79s  line=0 thom=9229 esc=200000
+[peel] zones 37/37, v_turb=per-zone, min=20, med=322, max=458 km/s, emit=volumetric, 200000 packets, redistrib=aa_prd, n_steps_peel=40
+[peel] done in 2.12s  line=0 thom=14743 esc=200000
+[phase5] He_II_4686  : τ_med=1.94e-30, L_line=8.769e+22, EW=  -1.90 AA, peak F=1.47 @ +420 km/s
+[peel] zones 37/37, v_turb=per-zone, min=20, med=322, max=458 km/s, emit=continuum, 200000 packets, redistrib=aa_prd, n_steps_peel=40
+[peel] done in 1.80s  line=0 thom=9070 esc=200000
+[peel] zones 37/37, v_turb=per-zone, min=20, med=322, max=458 km/s, emit=volumetric, 200000 packets, redistrib=aa_prd, n_steps_peel=40
+[peel] done in 2.11s  line=0 thom=14645 esc=200000
+[phase5] He_II_10124 : τ_med=4.87e-30, L_line=7.494e+21, EW=  +7.98 AA, peak F=1.35 @ +40 km/s
+[peel] zones 37/37, v_turb=per-zone, min=20, med=322, max=458 km/s, emit=continuum, 200000 packets, redistrib=aa_prd, n_steps_peel=40
+[peel] done in 2.11s  line=313099 thom=9343 esc=200000
+[peel] zones 37/37, v_turb=per-zone, min=20, med=322, max=458 km/s, emit=volumetric, 200000 packets, redistrib=aa_prd, n_steps_peel=40
+[peel] done in 2.31s  line=206499 thom=485 esc=200000
+[phase5] He_I_5876   : τ_med=9.67e-04, L_line=1.086e+39, EW= +63.69 AA, peak F=2.09 @ -3860 km/s
+[peel] zones 37/37, v_turb=per-zone, min=20, med=322, max=458 km/s, emit=continuum, 200000 packets, redistrib=aa_prd, n_steps_peel=40
+[peel] done in 1.81s  line=18239 thom=9238 esc=200000
+[peel] zones 37/37, v_turb=per-zone, min=20, med=322, max=458 km/s, emit=volumetric, 200000 packets, redistrib=aa_prd, n_steps_peel=40
+[peel] done in 2.31s  line=227517 thom=5163 esc=200000
+[phase5] He_I_6678   : τ_med=1.04e-07, L_line=4.250e+37, EW= +26.57 AA, peak F=1.53 @ -3180 km/s
+[peel] zones 37/37, v_turb=per-zone, min=20, med=322, max=458 km/s, emit=continuum, 200000 packets, redistrib=aa_prd, n_steps_peel=40
+[peel] done in 1.98s  line=179337 thom=9339 esc=200000
+[peel] zones 37/37, v_turb=per-zone, min=20, med=322, max=458 km/s, emit=volumetric, 200000 packets, redistrib=aa_prd, n_steps_peel=40
+[peel] done in 2.30s  line=208096 thom=616 esc=200000
+[phase5] He_I_7065   : τ_med=1.32e-04, L_line=4.142e+38, EW= +67.04 AA, peak F=2.04 @ -4200 km/s
+[peel] zones 37/37, v_turb=per-zone, min=20, med=322, max=458 km/s, emit=continuum, 200000 packets, redistrib=aa_prd, n_steps_peel=40
+[peel] done in 2.37s  line=736826 thom=9704 esc=200000
+[peel] zones 37/37, v_turb=per-zone, min=20, med=322, max=458 km/s, emit=volumetric, 200000 packets, redistrib=aa_prd, n_steps_peel=40
+[peel] done in 8.35s  line=9428968 thom=6958 esc=200000
+[phase5] He_I_10830  : τ_med=1.75e+02, L_line=4.303e+38, EW=-106.09 AA, peak F=1.91 @ -900 km/s
+[peel] zones 37/37, v_turb=per-zone, min=20, med=322, max=458 km/s, emit=continuum, 200000 packets, redistrib=aa_prd, n_steps_peel=40
+[peel] done in 2.00s  line=328415 thom=9297 esc=200000
+[peel] zones 37/37, v_turb=per-zone, min=20, med=322, max=458 km/s, emit=volumetric, 200000 packets, redistrib=aa_prd, n_steps_peel=40
+[peel] done in 6.54s  line=4438447 thom=5202 esc=200000
+[phase5] Halpha      : τ_med=6.83e+01, L_line=2.832e+40, EW=-303.74 AA, peak F=3.31 @ -320 km/s
+[peel] zones 37/37, v_turb=per-zone, min=20, med=322, max=458 km/s, emit=continuum, 200000 packets, redistrib=aa_prd, n_steps_peel=40
+[peel] done in 1.95s  line=161010 thom=9502 esc=200000
+[peel] zones 37/37, v_turb=per-zone, min=20, med=322, max=458 km/s, emit=volumetric, 200000 packets, redistrib=aa_prd, n_steps_peel=40
+[peel] done in 5.79s  line=2355009 thom=4755 esc=200000
+[phase5] Hbeta       : τ_med=9.60e+00, L_line=1.597e+40, EW=-116.57 AA, peak F=2.46 @ +340 km/s
+[peel] zones 37/37, v_turb=per-zone, min=20, med=322, max=458 km/s, emit=continuum, 200000 packets, redistrib=aa_prd, n_steps_peel=40
+[peel] done in 1.91s  line=98665 thom=9152 esc=200000
+[peel] zones 37/37, v_turb=per-zone, min=20, med=322, max=458 km/s, emit=volumetric, 200000 packets, redistrib=aa_prd, n_steps_peel=40
+[peel] done in 4.78s  line=1481449 thom=4613 esc=200000
+[phase5] Hgamma      : τ_med=3.22e+00, L_line=1.125e+40, EW= -63.36 AA, peak F=2.23 @ -4360 km/s
+[peel] zones 37/37, v_turb=per-zone, min=20, med=322, max=458 km/s, emit=continuum, 200000 packets, redistrib=aa_prd, n_steps_peel=40
+[peel] done in 2.34s  line=837221 thom=9701 esc=200000
+[peel] zones 37/37, v_turb=per-zone, min=20, med=322, max=458 km/s, emit=volumetric, 200000 packets, redistrib=aa_prd, n_steps_peel=40
+[peel] done in 5.28s  line=2144691 thom=3109 esc=200000
+[phase5] Palpha      : τ_med=1.14e+01, L_line=3.116e+39, EW=-511.57 AA, peak F=2.67 @ -1020 km/s
+[peel] zones 37/37, v_turb=per-zone, min=20, med=322, max=458 km/s, emit=continuum, 200000 packets, redistrib=aa_prd, n_steps_peel=40
+[peel] done in 2.23s  line=394174 thom=9477 esc=200000
+[peel] zones 37/37, v_turb=per-zone, min=20, med=322, max=458 km/s, emit=volumetric, 200000 packets, redistrib=aa_prd, n_steps_peel=40
+[peel] done in 4.14s  line=1117862 thom=2809 esc=200000
+[phase5] Pbeta       : τ_med=1.62e+00, L_line=4.244e+39, EW=-131.09 AA, peak F=2.16 @ -4700 km/s
+[phase5b] Hα-anchored correction factor R = L_prod / L_phase5 = 0.2158
+[phase5b] Applying R to L_line, EW, (F_norm − 1) for all non-Hα lines.
+[phase5] Saved prod_day020_lines.npz, .txt, .png
+[regime] Saved prod_day020_regime.txt  (8 grade-A, 5 grade-B, 0 grade-C, 1 grade-R)
+  Saved prod_day020_hydro.png
+  Saved prod_day020_ionization.png
+
+Total runtime: 0.6 min (4 RT iters, 800,000 total packets)
+
+[3/16] Processing mesa.day030_post_Lbol_max.data...
+
+==============================================================================
+ PROCESS day030 (mesa.day030_post_Lbol_max.data)
+==============================================================================
+[stella_io] mesa.day030_post_Lbol_max.data: epoch=30.0d, n_zones=800
+  r:     7.02e+13 to 2.39e+15 cm
+  v:     179.0 to 8863.9 km/s (max 8863.9)
+  T_gas: 3465 to 41073 K
+  ne:    2.28e+04 to 2.23e+13 cm⁻³
+  tau_es total: 4640.00
+  ⟨X_H⟩ (emit zones): 0.6388
+  ⟨X_He⟩ (emit zones): 0.3421
+  v(r) has 4/799 reversals (shocks in CSM interaction). MC kernel uses local Doppler broadening, not strict Sobolev, so this is handled but flagged.
+[stella_truncate] 800 → 62 zones
+  R_phot = 1.231e+15 cm (τ_es = 0.6666666666666666)
+  T_phot = 6241 K (gas T at inner boundary)
+  L_phot = 1.071e+42 erg/s
+  Outer-region τ_es (from photosphere) = 0.62
+  Outer zones span r = 1.243e+15 to 2.388e+15 cm
+  T_color at thermalization (τ_es=10, ε~0.003): 8893 K
+  T_color sensitivity (T_gas at τ_es = 1, 3, 10, 30, 100, 300):
+    τ_es=     1:  T=  6385 K
+    τ_es=     3:  T=  7178 K
+    τ_es=    10:  T=  8893 K
+    τ_es=    30:  T= 12337 K
+    τ_es=   100:  T= 17596 K
+    τ_es=   300:  T= 23849 K
+  Outer v range: 4601 to 8864 km/s
+[load_snapshot] applying per-zone photoionization equilibrium (CLOUDY/CMFGEN-style)...
+[photoionize_csm] T_source auto-selected: 8893 K  [T_color_thermalization (τ_es=10 layer)]
+[photoionize_csm] solving with source spectrum:
+  T_source = 8893 K  (T_phot = 6241 K, L_phot = 1.071e+42 erg/s)
+  hν₀/kT = 17.74  ⇒  Wien suppression exp(-17.7) = 1.97e-08
+  L_normalize_to_snap = True  (f_norm = 1.586e-01)
+  R_phot = 1.231e+15 cm, n_zones = 62
+  G_BB(τ=0) = 8.312e-02  →  Γ_BB(R_phot) = 5.223e-01 s⁻¹
+  iter   0: max ΔX_HII = 2.61e-01,  ⟨X_HII⟩ = 0.053,  f(X_HII>0.5) = 0.02,  range [6.09e-03, 0.572]
+  iter   1: max ΔX_HII = 1.56e-01,  ⟨X_HII⟩ = 0.038,  f(X_HII>0.5) = 0.02,  range [3.66e-03, 0.729]
+  iter   2: max ΔX_HII = 9.39e-02,  ⟨X_HII⟩ = 0.029,  f(X_HII>0.5) = 0.02,  range [2.19e-03, 0.823]
+  iter   3: max ΔX_HII = 5.63e-02,  ⟨X_HII⟩ = 0.024,  f(X_HII>0.5) = 0.02,  range [1.32e-03, 0.879]
+  iter   5: max ΔX_HII = 2.03e-02,  ⟨X_HII⟩ = 0.018,  f(X_HII>0.5) = 0.02,  range [4.74e-04, 0.933]
+  iter  10: max ΔX_HII = 1.58e-03,  ⟨X_HII⟩ = 0.016,  f(X_HII>0.5) = 0.02,  range [3.68e-05, 0.961]
+  → converged at iter 11 (Δ=9.46e-04 < tol=0.001)
+
+[photoionize_csm] RESULT:
+  τ_es (STELLA):     0.617  total along LOS
+  τ_es (photoionized): 0.425  total along LOS  (ratio 0.69×)
+  ⟨X_HII⟩ STELLA:    0.034  (range 7.52e-04 - 0.312)
+  ⟨X_HII⟩ photoeq:    0.016  (range 2.21e-05 - 0.962)
+  zones: 0/62 fully ionized (X>0.99); 61/62 neutral (X<0.01)
+[load_snapshot] format=stella, epoch=30.0d, n_zones=62
+  [STELLA] ⟨X_H⟩ in emit zones = 0.6388
+  [STELLA] epoch label is 'days post Lbol max' (not days since explosion)
+
+[1/2] RT-NLTE iteration (max_iter=8, tol=2.0%, damping=0.3)
+  [state-fix] T_phot: 1.000e+04 → 6.241e+03 (from snap['T_phot_inner'])
+  [STELLA] state.X_H overridden with per-zone composition: range 0.639 → 0.639, ⟨X_H⟩(emit)=0.639
+  [STELLA] state.X_He overridden with per-zone composition: range 0.342 → 0.342, ⟨X_He⟩(emit)=0.342
+  ionization_mode = saha, f_HI_max = 1.0
+[RT-iter] iter 0: baseline NLTE (no J_bar pumping)
+[RT-iter] iter 1: MC to measure J_bar, then re-solve NLTE
+[peel] zones 62/62, v_turb=per-zone, min=20, med=427, max=829 km/s, emit=continuum, 100000 packets, redistrib=aa_prd, n_steps_peel=40
+[peel] done in 1.41s  line=171362 thom=48808 esc=100000
+[peel] zones 62/62, v_turb=per-zone, min=20, med=427, max=829 km/s, emit=volumetric, 100000 packets, redistrib=aa_prd, n_steps_peel=40
+[peel] done in 4.27s  line=3626986 thom=14948 esc=100000
+  [measure_jbar] J_bar(Hα): 56/62 zones with non-trivial pumping. Range: 7.834e-08 to 2.738e-04, median: 3.053e-05 erg/s/cm²/sr/Hz
+           L_line = 2.201e+41 erg/s, J_bar_max = 2.738e-04 erg/s/cm²/sr/Hz, Δn_3_max = 1924.4% (damping=0.3)
+[RT-iter] iter 2: MC to measure J_bar, then re-solve NLTE
+[peel] zones 62/62, v_turb=per-zone, min=20, med=427, max=829 km/s, emit=continuum, 100000 packets, redistrib=aa_prd, n_steps_peel=40
+[peel] done in 1.40s  line=138804 thom=49095 esc=100000
+[peel] zones 62/62, v_turb=per-zone, min=20, med=427, max=829 km/s, emit=volumetric, 100000 packets, redistrib=aa_prd, n_steps_peel=40
+[peel] done in 4.27s  line=3574542 thom=18300 esc=100000
+  [measure_jbar] J_bar(Hα): 57/62 zones with non-trivial pumping. Range: 8.838e-08 to 2.636e-04, median: 3.058e-05 erg/s/cm²/sr/Hz
+           L_line = 2.201e+41 erg/s, J_bar_max = 2.707e-04 erg/s/cm²/sr/Hz, Δn_3_max = 1079.6% (damping=0.3)
+[RT-iter] iter 3: MC to measure J_bar, then re-solve NLTE
+[peel] zones 62/62, v_turb=per-zone, min=20, med=427, max=829 km/s, emit=continuum, 100000 packets, redistrib=aa_prd, n_steps_peel=40
+[peel] done in 1.40s  line=136071 thom=49102 esc=100000
+[peel] zones 62/62, v_turb=per-zone, min=20, med=427, max=829 km/s, emit=volumetric, 100000 packets, redistrib=aa_prd, n_steps_peel=40
+[peel] done in 4.31s  line=3583568 thom=17540 esc=100000
+  [measure_jbar] J_bar(Hα): 58/62 zones with non-trivial pumping. Range: 8.761e-08 to 2.645e-04, median: 2.872e-05 erg/s/cm²/sr/Hz
+           L_line = 2.201e+41 erg/s, J_bar_max = 2.689e-04 erg/s/cm²/sr/Hz, Δn_3_max = 51.1% (damping=0.3)
+[RT-iter] iter 4: MC to measure J_bar, then re-solve NLTE
+[peel] zones 62/62, v_turb=per-zone, min=20, med=427, max=829 km/s, emit=continuum, 100000 packets, redistrib=aa_prd, n_steps_peel=40
+[peel] done in 1.40s  line=138255 thom=49502 esc=100000
+[peel] zones 62/62, v_turb=per-zone, min=20, med=427, max=829 km/s, emit=volumetric, 100000 packets, redistrib=aa_prd, n_steps_peel=40
+[peel] done in 4.26s  line=3559359 thom=17853 esc=100000
+  [measure_jbar] J_bar(Hα): 56/62 zones with non-trivial pumping. Range: 8.805e-08 to 2.628e-04, median: 2.764e-05 erg/s/cm²/sr/Hz
+           L_line = 2.201e+41 erg/s, J_bar_max = 2.670e-04 erg/s/cm²/sr/Hz, Δn_3_max = 47.2% (damping=0.3)
+[RT-iter] iter 5: MC to measure J_bar, then re-solve NLTE
+[peel] zones 62/62, v_turb=per-zone, min=20, med=427, max=829 km/s, emit=continuum, 100000 packets, redistrib=aa_prd, n_steps_peel=40
+[peel] done in 1.40s  line=135396 thom=49531 esc=100000
+[peel] zones 62/62, v_turb=per-zone, min=20, med=427, max=829 km/s, emit=volumetric, 100000 packets, redistrib=aa_prd, n_steps_peel=40
+[peel] done in 4.35s  line=3562773 thom=18116 esc=100000
+  [measure_jbar] J_bar(Hα): 58/62 zones with non-trivial pumping. Range: 8.806e-08 to 2.622e-04, median: 3.047e-05 erg/s/cm²/sr/Hz
+           L_line = 2.201e+41 erg/s, J_bar_max = 2.656e-04 erg/s/cm²/sr/Hz, Δn_3_max = 29.8% (damping=0.3)
+[RT-iter] iter 6: MC to measure J_bar, then re-solve NLTE
+[peel] zones 62/62, v_turb=per-zone, min=20, med=427, max=829 km/s, emit=continuum, 100000 packets, redistrib=aa_prd, n_steps_peel=40
+[peel] done in 1.40s  line=136681 thom=49132 esc=100000
+[peel] zones 62/62, v_turb=per-zone, min=20, med=427, max=829 km/s, emit=volumetric, 100000 packets, redistrib=aa_prd, n_steps_peel=40
+[peel] done in 4.27s  line=3580517 thom=18237 esc=100000
+  [measure_jbar] J_bar(Hα): 58/62 zones with non-trivial pumping. Range: 8.935e-08 to 2.633e-04, median: 2.900e-05 erg/s/cm²/sr/Hz
+           L_line = 2.201e+41 erg/s, J_bar_max = 2.649e-04 erg/s/cm²/sr/Hz, Δn_3_max = 34.8% (damping=0.3)
+[RT-iter] iter 7: MC to measure J_bar, then re-solve NLTE
+[peel] zones 62/62, v_turb=per-zone, min=20, med=427, max=829 km/s, emit=continuum, 100000 packets, redistrib=aa_prd, n_steps_peel=40
+[peel] done in 1.40s  line=139414 thom=49117 esc=100000
+[peel] zones 62/62, v_turb=per-zone, min=20, med=427, max=829 km/s, emit=volumetric, 100000 packets, redistrib=aa_prd, n_steps_peel=40
+[peel] done in 4.27s  line=3567855 thom=18152 esc=100000
+  [measure_jbar] J_bar(Hα): 57/62 zones with non-trivial pumping. Range: 9.006e-08 to 2.625e-04, median: 2.852e-05 erg/s/cm²/sr/Hz
+           L_line = 2.201e+41 erg/s, J_bar_max = 2.642e-04 erg/s/cm²/sr/Hz, Δn_3_max = 27.5% (damping=0.3)
+[RT-iter] iter 8: MC to measure J_bar, then re-solve NLTE
+[peel] zones 62/62, v_turb=per-zone, min=20, med=427, max=829 km/s, emit=continuum, 100000 packets, redistrib=aa_prd, n_steps_peel=40
+[peel] done in 1.40s  line=135153 thom=49193 esc=100000
+[peel] zones 62/62, v_turb=per-zone, min=20, med=427, max=829 km/s, emit=volumetric, 100000 packets, redistrib=aa_prd, n_steps_peel=40
+[peel] done in 4.29s  line=3573513 thom=18324 esc=100000
+  [measure_jbar] J_bar(Hα): 56/62 zones with non-trivial pumping. Range: 8.886e-08 to 2.629e-04, median: 2.996e-05 erg/s/cm²/sr/Hz
+           L_line = 2.201e+41 erg/s, J_bar_max = 2.638e-04 erg/s/cm²/sr/Hz, Δn_3_max = 27.4% (damping=0.3)
+[RT-iter] reached max_iter (8) without converging below tol=2.0%. Using last params.
+[he2_nlte] X_HeIII=6.43e-46, X_HeII=1.000, n_HeIII=2.54e-37, n_HeII=3.93e+08, τ_med(4686)=2.9e-30, (1640)=1.0e-30, (3203)=1.0e-30, (10124)=7.4e-30  [32 iters]
+[he1_nlte] n_HeI=3.51e+08, n_HeII=2.65e+04, NLTE/LTE(2³S/1¹S)=7.3e+13, τ_med(10830)=2.0e+01, (5876)=4.2e-07, (7065)=5.7e-08, (6678)=8.8e-10  [13 iters]
+
+  [auto-calibration] L_line/L_cont_band = 2.497 → using 'f_cont_bb_lambda'
+
+[2/2] Production MC: 400,000 packets (calibration=f_cont_bb_lambda)
+[abs] R_phot = 1.231e+15 cm, T_phot = 6241 K
+[abs] L_cont_src (4700-8450 AA) = 4.371e+41 erg/s
+[abs] L_line = 2.201e+41 erg/s, ratio L_line/L_cont = 5.035e-01
+[abs] per-packet luminosities: cont = 2.186e+36, vol = 1.100e+36
+[abs] continuum peel-off, N=200000, L_per_pkt=2.186e+36
+[peel] zones 62/62, v_turb=per-zone, min=20, med=427, max=829 km/s, emit=continuum, 200000 packets, redistrib=aa_prd, n_steps_peel=40
+[peel] done in 2.79s  line=261974 thom=98327 esc=200000
+[abs] volumetric peel-off, N=200000, L_per_pkt=1.100e+36
+[peel] zones 62/62, v_turb=per-zone, min=20, med=427, max=829 km/s, emit=volumetric, 200000 packets, redistrib=aa_prd, n_steps_peel=40
+[peel] done in 8.54s  line=7132263 thom=36504 esc=200000
+[abs] F_cont_baseline_peel (far wing): 5.547e+36 erg/s/cm²/AA
+[abs] F_cont_BB_baseline (diluted BB):  1.425e+37 erg/s/cm²/AA
+[abs] using baseline:                   1.426e+37 mean (range 1.315e+37-1.538e+37, per-λ, mode=f_cont_bb_lambda)
+[abs] EW peel uncalibrated:        1244.05 AA
+[abs] EW theoretical (L_line/L_cont × out_band): 1872.49 AA
+[abs] calibration mode: f_cont_bb_lambda, factor = 1.0000e+00
+[abs] R_phot = 1.231e+15 cm, T_phot = 6241 K
+[abs] L_cont_src (4700-8450 AA) = 4.371e+41 erg/s
+[abs] L_line = 2.201e+41 erg/s, ratio L_line/L_cont = 5.035e-01
+[abs] per-packet luminosities: cont = 2.186e+36, vol = 1.100e+36
+[abs] continuum peel-off, N=200000, L_per_pkt=2.186e+36
+[peel] zones 62/62, v_turb=per-zone, min=20, med=427, max=829 km/s, emit=continuum, 200000 packets, redistrib=aa_prd, n_steps_peel=40
+[peel] done in 2.80s  line=280698 thom=98219 esc=200000
+[abs] volumetric peel-off, N=200000, L_per_pkt=1.100e+36
+[peel] zones 62/62, v_turb=per-zone, min=20, med=427, max=829 km/s, emit=volumetric, 200000 packets, redistrib=aa_prd, n_steps_peel=40
+[peel] done in 8.59s  line=7126872 thom=36387 esc=200000
+[abs] F_cont_baseline_peel (far wing): 5.547e+36 erg/s/cm²/AA
+[abs] F_cont_BB_baseline (diluted BB):  1.425e+37 erg/s/cm²/AA
+[abs] using baseline:                   1.426e+37 mean (range 1.315e+37-1.538e+37, per-λ, mode=f_cont_bb_lambda)
+[abs] EW peel uncalibrated:        1243.52 AA
+[abs] EW theoretical (L_line/L_cont × out_band): 1872.49 AA
+[abs] calibration mode: f_cont_bb_lambda, factor = 1.0000e+00
+
+[smooth] Gaussian σ=25.0 km/s (0.88 bins) applied to F_norm
+
+[phase5] Computing He multi-line profiles (200,000 packets/line)
+[phase5] prod_Ha cross-check: L_line = 2.201e+41 erg/s, EW = -790.77 Å, peak F = 8.28 @ +171 km/s
+[phase5_cont] T_phot = 6241 K, R_phot = 1.231e+15 cm, W = 0.50
+[phase5_cont] line             λ_rest    L_cont_band    F_cont(λ_0)  x=hc/λkT
+[phase5_cont] ------------ ---------- -------------- --------------  ------
+[phase5_cont] He_II_1640       1640.4      1.298e+38      1.240e+05  x = 14.05
+[phase5_cont] He_II_3203       3203.1      8.464e+39      4.155e+06  x =  7.20
+[phase5_cont] He_II_4686       4685.7      1.814e+40      6.088e+06  x =  4.92
+[phase5_cont] He_II_10124     10123.6      1.295e+40      2.011e+06  x =  2.28
+[phase5_cont] He_I_5876        5875.6      2.013e+40      5.387e+06  x =  3.92
+[phase5_cont] He_I_6678        6678.1      1.957e+40      4.607e+06  x =  3.45
+[phase5_cont] He_I_7065        7065.2      1.900e+40      4.229e+06  x =  3.26
+[phase5_cont] He_I_10830      10830.3      1.168e+40      1.696e+06  x =  2.13
+[phase5_cont] Halpha           6562.8      1.971e+40      4.721e+06  x =  3.51
+[phase5_cont] Hbeta            4861.3      1.873e+40      6.059e+06  x =  4.74
+[phase5_cont] Hgamma           4340.5      1.662e+40      6.021e+06  x =  5.31
+[phase5_cont] Palpha          18751.0      3.981e+39      3.336e+05  x =  1.23
+[phase5_cont] Pbeta           12818.1      8.747e+39      1.072e+06  x =  1.80
+
+[phase5] Computing 13 line profiles (200000 packets each)
+[peel] zones 62/62, v_turb=per-zone, min=20, med=427, max=829 km/s, emit=continuum, 200000 packets, redistrib=aa_prd, n_steps_peel=40
+[peel] done in 2.66s  line=0 thom=97676 esc=200000
+[peel] zones 62/62, v_turb=per-zone, min=20, med=427, max=829 km/s, emit=volumetric, 200000 packets, redistrib=aa_prd, n_steps_peel=40
+[peel] done in 3.03s  line=0 thom=94452 esc=200000
+[phase5] He_II_1640  : τ_med=1.00e-30, L_line=7.168e+24, EW=  +0.68 AA, peak F=1.70 @ -1320 km/s
+[peel] zones 62/62, v_turb=per-zone, min=20, med=427, max=829 km/s, emit=continuum, 200000 packets, redistrib=aa_prd, n_steps_peel=40
+[peel] done in 2.67s  line=0 thom=97242 esc=200000
+[peel] zones 62/62, v_turb=per-zone, min=20, med=427, max=829 km/s, emit=volumetric, 200000 packets, redistrib=aa_prd, n_steps_peel=40
+[peel] done in 3.03s  line=0 thom=94521 esc=200000
+[phase5] He_II_3203  : τ_med=1.00e-30, L_line=4.567e+23, EW=  -7.12 AA, peak F=1.69 @ +940 km/s
+[peel] zones 62/62, v_turb=per-zone, min=20, med=427, max=829 km/s, emit=continuum, 200000 packets, redistrib=aa_prd, n_steps_peel=40
+[peel] done in 2.68s  line=0 thom=97349 esc=200000
+[peel] zones 62/62, v_turb=per-zone, min=20, med=427, max=829 km/s, emit=volumetric, 200000 packets, redistrib=aa_prd, n_steps_peel=40
+[peel] done in 3.02s  line=0 thom=95193 esc=200000
+[phase5] He_II_4686  : τ_med=2.95e-30, L_line=1.054e+24, EW=  +2.52 AA, peak F=1.38 @ -380 km/s
+[peel] zones 62/62, v_turb=per-zone, min=20, med=427, max=829 km/s, emit=continuum, 200000 packets, redistrib=aa_prd, n_steps_peel=40
+[peel] done in 2.70s  line=0 thom=97044 esc=200000
+[peel] zones 62/62, v_turb=per-zone, min=20, med=427, max=829 km/s, emit=volumetric, 200000 packets, redistrib=aa_prd, n_steps_peel=40
+[peel] done in 3.03s  line=0 thom=94804 esc=200000
+[phase5] He_II_10124 : τ_med=7.39e-30, L_line=9.002e+22, EW=  -1.37 AA, peak F=1.39 @ +3720 km/s
+[peel] zones 62/62, v_turb=per-zone, min=20, med=427, max=829 km/s, emit=continuum, 200000 packets, redistrib=aa_prd, n_steps_peel=40
+[peel] done in 3.32s  line=919159 thom=100843 esc=200000
+[peel] zones 62/62, v_turb=per-zone, min=20, med=427, max=829 km/s, emit=volumetric, 200000 packets, redistrib=aa_prd, n_steps_peel=40
+[peel] done in 3.17s  line=226028 thom=1170 esc=200000
+[phase5] He_I_5876   : τ_med=4.17e-07, L_line=3.613e+39, EW= +46.92 AA, peak F=2.49 @ -4080 km/s
+[peel] zones 62/62, v_turb=per-zone, min=20, med=427, max=829 km/s, emit=continuum, 200000 packets, redistrib=aa_prd, n_steps_peel=40
+[peel] done in 3.08s  line=500381 thom=100637 esc=200000
+[peel] zones 62/62, v_turb=per-zone, min=20, med=427, max=829 km/s, emit=volumetric, 200000 packets, redistrib=aa_prd, n_steps_peel=40
+[peel] done in 3.15s  line=224628 thom=2199 esc=200000
+[phase5] He_I_6678   : τ_med=8.80e-10, L_line=2.704e+39, EW= +46.54 AA, peak F=2.40 @ -3540 km/s
+[peel] zones 62/62, v_turb=per-zone, min=20, med=427, max=829 km/s, emit=continuum, 200000 packets, redistrib=aa_prd, n_steps_peel=40
+[peel] done in 3.11s  line=569728 thom=100222 esc=200000
+[peel] zones 62/62, v_turb=per-zone, min=20, med=427, max=829 km/s, emit=volumetric, 200000 packets, redistrib=aa_prd, n_steps_peel=40
+[peel] done in 3.14s  line=220236 thom=2000 esc=200000
+[phase5] He_I_7065   : τ_med=5.67e-08, L_line=1.521e+39, EW= +65.99 AA, peak F=2.26 @ -3840 km/s
+[peel] zones 62/62, v_turb=per-zone, min=20, med=427, max=829 km/s, emit=continuum, 200000 packets, redistrib=aa_prd, n_steps_peel=40
+[peel] done in 3.60s  line=1729242 thom=101949 esc=200000
+[peel] zones 62/62, v_turb=per-zone, min=20, med=427, max=829 km/s, emit=volumetric, 200000 packets, redistrib=aa_prd, n_steps_peel=40
+[peel] done in 10.20s  line=9521489 thom=40945 esc=200000
+[phase5] He_I_10830  : τ_med=1.96e+01, L_line=1.205e+39, EW=-240.94 AA, peak F=3.31 @ -800 km/s
+[peel] zones 62/62, v_turb=per-zone, min=20, med=427, max=829 km/s, emit=continuum, 200000 packets, redistrib=aa_prd, n_steps_peel=40
+[peel] done in 3.09s  line=841015 thom=100636 esc=200000
+[peel] zones 62/62, v_turb=per-zone, min=20, med=427, max=829 km/s, emit=volumetric, 200000 packets, redistrib=aa_prd, n_steps_peel=40
+[peel] done in 8.12s  line=5365687 thom=25667 esc=200000
+[phase5] Halpha      : τ_med=1.07e-01, L_line=5.858e+40, EW=-630.97 AA, peak F=7.34 @ -600 km/s
+[peel] zones 62/62, v_turb=per-zone, min=20, med=427, max=829 km/s, emit=continuum, 200000 packets, redistrib=aa_prd, n_steps_peel=40
+[peel] done in 3.01s  line=469474 thom=99017 esc=200000
+[peel] zones 62/62, v_turb=per-zone, min=20, med=427, max=829 km/s, emit=volumetric, 200000 packets, redistrib=aa_prd, n_steps_peel=40
+[peel] done in 7.51s  line=2838002 thom=16345 esc=200000
+[phase5] Hbeta       : τ_med=1.49e-02, L_line=3.006e+40, EW=-288.35 AA, peak F=5.30 @ -1600 km/s
+[peel] zones 62/62, v_turb=per-zone, min=20, med=427, max=829 km/s, emit=continuum, 200000 packets, redistrib=aa_prd, n_steps_peel=40
+[peel] done in 2.93s  line=324837 thom=99466 esc=200000
+[peel] zones 62/62, v_turb=per-zone, min=20, med=427, max=829 km/s, emit=volumetric, 200000 packets, redistrib=aa_prd, n_steps_peel=40
+[peel] done in 5.53s  line=1560316 thom=11897 esc=200000
+[phase5] Hgamma      : τ_med=4.98e-03, L_line=2.649e+40, EW=-229.67 AA, peak F=4.66 @ -2200 km/s
+[peel] zones 62/62, v_turb=per-zone, min=20, med=427, max=829 km/s, emit=continuum, 200000 packets, redistrib=aa_prd, n_steps_peel=40
+[peel] done in 4.08s  line=2711887 thom=104452 esc=200000
+[peel] zones 62/62, v_turb=per-zone, min=20, med=427, max=829 km/s, emit=volumetric, 200000 packets, redistrib=aa_prd, n_steps_peel=40
+[peel] done in 5.55s  line=1833972 thom=4900 esc=200000
+[phase5] Palpha      : τ_med=9.08e-03, L_line=1.655e+39, EW=-733.64 AA, peak F=5.06 @ -1280 km/s
+[peel] zones 62/62, v_turb=per-zone, min=20, med=427, max=829 km/s, emit=continuum, 200000 packets, redistrib=aa_prd, n_steps_peel=40
+[peel] done in 3.69s  line=1423485 thom=102533 esc=200000
+[peel] zones 62/62, v_turb=per-zone, min=20, med=427, max=829 km/s, emit=volumetric, 200000 packets, redistrib=aa_prd, n_steps_peel=40
+[peel] done in 4.77s  line=1082201 thom=4305 esc=200000
+[phase5] Pbeta       : τ_med=1.17e-03, L_line=2.120e+39, EW=-429.04 AA, peak F=4.38 @ -2000 km/s
+[phase5b] Hα-anchored correction factor R = L_prod / L_phase5 = 3.7572
+[phase5b] Applying R to L_line, EW, (F_norm − 1) for all non-Hα lines.
+[phase5] Saved prod_day030_lines.npz, .txt, .png
+[regime] Saved prod_day030_regime.txt  (12 grade-A, 1 grade-B, 0 grade-C, 1 grade-R)
+  Saved prod_day030_hydro.png
+  Saved prod_day030_ionization.png
+
+Total runtime: 1.1 min (8 RT iters, 1,200,000 total packets)
+
+[4/16] Processing mesa.day040_post_Lbol_max.data...
+
+==============================================================================
+ PROCESS day040 (mesa.day040_post_Lbol_max.data)
+==============================================================================
+[stella_io] mesa.day040_post_Lbol_max.data: epoch=40.0d, n_zones=800
+  r:     8.47e+13 to 3.18e+15 cm
+  v:     177.0 to 8865.0 km/s (max 8865.0)
+  T_gas: 2957 to 32939 K
+  ne:    3.34e+03 to 9.34e+12 cm⁻³
+  tau_es total: 2514.54
+  ⟨X_H⟩ (emit zones): 0.6388
+  ⟨X_He⟩ (emit zones): 0.3421
+  v(r) has 3/799 reversals (shocks in CSM interaction). MC kernel uses local Doppler broadening, not strict Sobolev, so this is handled but flagged.
+[stella_truncate] 800 → 89 zones
+  R_phot = 1.317e+15 cm (τ_es = 0.6666666666666666)
+  T_phot = 6043 K (gas T at inner boundary)
+  L_phot = 1.110e+42 erg/s
+  Outer-region τ_es (from photosphere) = 0.56
+  Outer zones span r = 1.325e+15 to 3.175e+15 cm
+  T_color at thermalization (τ_es=10, ε~0.003): 8491 K
+  T_color sensitivity (T_gas at τ_es = 1, 3, 10, 30, 100, 300):
+    τ_es=     1:  T=  6297 K
+    τ_es=     3:  T=  7094 K
+    τ_es=    10:  T=  8491 K
+    τ_es=    30:  T= 11459 K
+    τ_es=   100:  T= 15868 K
+    τ_es=   300:  T= 21115 K
+  Outer v range: 3690 to 8865 km/s
+[load_snapshot] applying per-zone photoionization equilibrium (CLOUDY/CMFGEN-style)...
+[photoionize_csm] T_source auto-selected: 8491 K  [T_color_thermalization (τ_es=10 layer)]
+[photoionize_csm] solving with source spectrum:
+  T_source = 8491 K  (T_phot = 6043 K, L_phot = 1.110e+42 erg/s)
+  hν₀/kT = 18.59  ⇒  Wien suppression exp(-18.6) = 8.48e-09
+  L_normalize_to_snap = True  (f_norm = 1.729e-01)
+  R_phot = 1.317e+15 cm, n_zones = 89
+  G_BB(τ=0) = 3.740e-02  →  Γ_BB(R_phot) = 2.350e-01 s⁻¹
+  iter   0: max ΔX_HII = 2.80e-01,  ⟨X_HII⟩ = 0.057,  f(X_HII>0.5) = 0.00,  range [6.50e-03, 0.427]
+  iter   1: max ΔX_HII = 1.68e-01,  ⟨X_HII⟩ = 0.038,  f(X_HII>0.5) = 0.01,  range [3.90e-03, 0.595]
+  iter   2: max ΔX_HII = 1.01e-01,  ⟨X_HII⟩ = 0.026,  f(X_HII>0.5) = 0.01,  range [2.34e-03, 0.696]
+  iter   3: max ΔX_HII = 6.04e-02,  ⟨X_HII⟩ = 0.020,  f(X_HII>0.5) = 0.01,  range [1.40e-03, 0.756]
+  iter   5: max ΔX_HII = 2.17e-02,  ⟨X_HII⟩ = 0.013,  f(X_HII>0.5) = 0.01,  range [5.06e-04, 0.814]
+  iter  10: max ΔX_HII = 1.69e-03,  ⟨X_HII⟩ = 0.010,  f(X_HII>0.5) = 0.01,  range [3.93e-05, 0.844]
+  → converged at iter 12 (Δ=6.09e-04 < tol=0.001)
+
+[photoionize_csm] RESULT:
+  τ_es (STELLA):     0.562  total along LOS
+  τ_es (photoionized): 0.646  total along LOS  (ratio 1.15×)
+  ⟨X_HII⟩ STELLA:    0.012  (range 2.59e-04 - 0.148)
+  ⟨X_HII⟩ photoeq:    0.010  (range 1.42e-05 - 0.846)
+  zones: 0/89 fully ionized (X>0.99); 88/89 neutral (X<0.01)
+[load_snapshot] format=stella, epoch=40.0d, n_zones=89
+  [STELLA] ⟨X_H⟩ in emit zones = 0.6388
+  [STELLA] epoch label is 'days post Lbol max' (not days since explosion)
+
+[1/2] RT-NLTE iteration (max_iter=8, tol=2.0%, damping=0.3)
+  [state-fix] T_phot: 1.000e+04 → 6.043e+03 (from snap['T_phot_inner'])
+  [STELLA] state.X_H overridden with per-zone composition: range 0.639 → 0.639, ⟨X_H⟩(emit)=0.639
+  [STELLA] state.X_He overridden with per-zone composition: range 0.342 → 0.342, ⟨X_He⟩(emit)=0.342
+  ionization_mode = saha, f_HI_max = 1.0
+[RT-iter] iter 0: baseline NLTE (no J_bar pumping)
+[RT-iter] iter 1: MC to measure J_bar, then re-solve NLTE

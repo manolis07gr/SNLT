@@ -1,0 +1,1 @@
+../../src/snapshot_analyzer.py
