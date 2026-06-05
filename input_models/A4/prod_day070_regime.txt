@@ -8,20 +8,20 @@ Hα (production RT-NLTE): L_line = 8.149e+40 erg/s
 
 line           grade  regime             τ_med      τ_max      β_med      L_line[erg/s] 
 ------------------------------------------------------------------------------------------------
-Halpha_prod    A      saturated          5.10e+04  5.10e+05     --      8.149e+40
+Halpha_prod    A      saturated          5.12e+04  5.12e+05     --      8.149e+40
 He_II_1640     R      optically_thin     1.26e-29  1.26e-28     --      4.903e+06
 He_II_3203     A      optically_thin     3.67e-30  3.67e-29     --      2.131e+05
 He_II_4686     A      optically_thin     3.41e-29  3.41e-28     --      4.921e+05
 He_II_10124    A      optically_thin     8.58e-29  8.58e-28     --      4.202e+04
-He_I_5876      C      saturated          1.29e+04  1.29e+05     --      1.175e+38
-He_I_6678      B      optically_thick    2.59e+01  2.59e+02     --      7.269e+37
-He_I_7065      B      optically_thick    1.76e+03  1.76e+04     --      5.656e+37
-He_I_10830     C      saturated          2.98e+05  2.98e+06     --      1.703e+39
-Halpha         B      saturated          5.10e+04  5.10e+05     --      8.149e+40
-Hbeta          B      optically_thick    9.83e+03  9.83e+04     --      2.743e+40
+He_I_5876      C      saturated          1.29e+04  1.29e+05     --      1.176e+38
+He_I_6678      B      optically_thick    2.59e+01  2.59e+02     --      7.273e+37
+He_I_7065      B      optically_thick    1.76e+03  1.76e+04     --      5.658e+37
+He_I_10830     C      saturated          2.98e+05  2.98e+06     --      1.704e+39
+Halpha         B      saturated          5.12e+04  5.12e+05     --      8.149e+40
+Hbeta          B      optically_thick    9.84e+03  9.84e+04     --      2.743e+40
 Hgamma         B      optically_thick    3.29e+03  3.29e+04     --      1.296e+40
-Palpha         C      saturated          1.41e+05  1.41e+06     --      3.312e+39
-Pbeta          C      saturated          1.73e+04  1.73e+05     --      2.480e+39
+Palpha         C      saturated          1.54e+05  1.54e+06     --      3.312e+39
+Pbeta          C      saturated          1.88e+04  1.88e+05     --      2.480e+39
 
 Per-line action recommendations:
 ------------------------------------------------------------------------------------------------

@@ -239,11 +239,52 @@ def kappa_ff_H(lam_AA, T, n_e, n_p, gaunt=1.2):
     return kappa
 
 
+def kappa_ff_He(lam_AA, T, n_e, n_HeII, n_HeIII=None, gaunt=1.2):
+    """Helium free-free absorption coefficient [cm⁻¹]  (P1 #4 root-fix).
+
+    Same hydrogenic free-free formula as kappa_ff_H but for the He ions, summed
+    with the Z² charge weighting: He⁺ (He II) contributes Z²=1, He²⁺ (He III)
+    contributes Z²=4. This is the only continuum opacity channel that matters for
+    He-rich gas at OPTICAL/NIR wavelengths — He bound-free thresholds are deep in
+    the EUV (He I 504 Å, He II 228 Å), blueward of every line in this pipeline,
+    so bf-He is intentionally omitted.
+
+        κ_ff = 3.692e8 · g_ff · n_e · Σ(Z²·n_ion) · T^(-1/2) · ν^(-3)
+               · (1 − e^(−hν/kT))
+
+    n_HeIII defaults to 0 (cold He-recombination regime). In cold, mostly-neutral
+    He (n_HeII → 0) this correctly vanishes; it becomes significant only in the
+    ionized He interaction phase (n_HeII ≈ n_e).
+    """
+    T = np.asarray(T, dtype=float)
+    n_e = np.asarray(n_e, dtype=float)
+    n_HeII = np.asarray(n_HeII, dtype=float)
+    if n_HeIII is None:
+        n_HeIII = np.zeros_like(n_HeII)
+    n_HeIII = np.asarray(n_HeIII, dtype=float)
+    lam_AA = np.atleast_1d(np.asarray(lam_AA, dtype=float))
+    nu = C_LIGHT / (lam_AA * 1e-8)    # Hz
+
+    n_ion_Z2 = n_HeII * 1.0 + n_HeIII * 4.0     # Σ Z² n_ion
+    prefactor = 3.692e8
+    nu_inv3 = 1.0 / nu**3
+    stim = 1.0 - np.exp(-HPL * nu[:, None] / (KB * T[None, :]))
+    kappa = (prefactor * gaunt
+             * n_e[None, :] * n_ion_Z2[None, :]
+             * T[None, :]**(-0.5)
+             * nu_inv3[:, None]
+             * stim)
+    if kappa.shape[0] == 1:
+        return kappa[0]
+    return kappa
+
+
 # ===========================================================================
 # Total
 # ===========================================================================
 def kappa_cont_total(lam_AA, T, n_e, n_p, n_HI_per_level,
-                      X_H=None, include=('es', 'bf', 'H-', 'ff')):
+                      X_H=None, include=('es', 'bf', 'H-', 'ff'),
+                      n_HeII=None, n_HeIII=None):
     """Total continuum opacity κ_cont(λ) per zone [cm⁻¹].
 
     Parameters
@@ -253,7 +294,12 @@ def kappa_cont_total(lam_AA, T, n_e, n_p, n_HI_per_level,
     n_HI_per_level : (nlev, nzones), per-level HI populations [cm⁻³]
                      (level 0 = ground state n=1)
     X_H : unused here; reserved for future use (e.g. He ff additions)
-    include : which channels to sum. Defaults to all four.
+    include : which channels to sum. Defaults to the four H-rich channels.
+              Add 'He-ff' to include helium free-free (P1 #4); requires n_HeII
+              (and optionally n_HeIII). The default does NOT include it, so
+              H-rich photosphere results are byte-identical.
+    n_HeII, n_HeIII : (nzones,) He⁺ / He²⁺ number densities [cm⁻³], needed only
+                      when 'He-ff' is in `include`.
 
     Returns
     -------
@@ -289,6 +335,11 @@ def kappa_cont_total(lam_AA, T, n_e, n_p, n_HI_per_level,
         if kff.ndim == 1:
             kff = kff[None, :]
         kappa += kff
+    if 'He-ff' in include and n_HeII is not None:
+        kHeff = kappa_ff_He(lam_AA_arr, T, n_e, n_HeII, n_HeIII)
+        if kHeff.ndim == 1:
+            kHeff = kHeff[None, :]
+        kappa += kHeff
 
     if nlam == 1:
         return kappa[0]

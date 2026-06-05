@@ -12,7 +12,7 @@ not affecting the global line answer.
 Per-iteration history (worst-oscillating zone):
 
    it       L_line     Δn3_max   zone      r [cm]    X_HII        n_e    T [K]         n_3       J_bar
-    1   9.0633e+39    1470.63%     53   5.111e+15   1.0000  9.208e+07     6404   6.939e+02   3.022e-09
-    2   9.0633e+39       1.53%      2   1.853e+15   1.0000  7.702e+08     9745   5.953e+03   3.886e-09
+    1   9.0633e+39    1472.40%     53   5.111e+15   1.0000  9.208e+07     6404   6.947e+02   3.173e-09
+    2   9.0633e+39       1.77%      1   1.789e+15   1.0000  8.280e+08     9790   6.384e+03   3.738e-09
 
 Most-frequently-worst zone: idx=53  (1/2 iters)

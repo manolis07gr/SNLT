@@ -8,20 +8,20 @@ Hα (production RT-NLTE): L_line = 4.510e+40 erg/s
 
 line           grade  regime             τ_med      τ_max      β_med      L_line[erg/s] 
 ------------------------------------------------------------------------------------------------
-Halpha_prod    A      saturated          1.59e+05  1.59e+06     --      4.510e+40
+Halpha_prod    A      saturated          1.57e+05  1.57e+06     --      4.510e+40
 He_II_1640     R      optically_thin     3.98e-30  3.98e-29     --      1.487e-16
 He_II_3203     A      optically_thin     1.51e-30  1.51e-29     --      2.679e-23
 He_II_4686     A      optically_thin     1.40e-29  1.40e-28     --      3.780e-21
 He_II_10124    A      optically_thin     3.54e-29  3.54e-28     --      5.281e-24
-He_I_5876      B      optically_thick    7.91e+03  7.91e+04     --      3.109e+37
-He_I_6678      B      optically_thick    1.68e+02  1.68e+03     --      1.963e+37
-He_I_7065      B      optically_thick    1.08e+03  1.08e+04     --      2.362e+37
-He_I_10830     C      saturated          4.21e+05  4.21e+06     --      5.108e+37
-Halpha         B      saturated          1.59e+05  1.59e+06     --      4.510e+40
+He_I_5876      B      optically_thick    7.91e+03  7.91e+04     --      3.114e+37
+He_I_6678      B      optically_thick    1.68e+02  1.68e+03     --      1.966e+37
+He_I_7065      B      optically_thick    1.08e+03  1.08e+04     --      2.366e+37
+He_I_10830     C      saturated          4.21e+05  4.21e+06     --      5.116e+37
+Halpha         B      saturated          1.57e+05  1.57e+06     --      4.510e+40
 Hbeta          C      saturated          3.41e+04  3.41e+05     --      1.459e+40
 Hgamma         C      saturated          1.14e+04  1.14e+05     --      6.943e+39
-Palpha         C      saturated          4.83e+05  4.83e+06     --      1.831e+39
-Pbeta          C      saturated          6.41e+04  6.41e+05     --      1.363e+39
+Palpha         C      saturated          4.65e+05  4.65e+06     --      1.831e+39
+Pbeta          C      saturated          6.09e+04  6.09e+05     --      1.363e+39
 
 Per-line action recommendations:
 ------------------------------------------------------------------------------------------------

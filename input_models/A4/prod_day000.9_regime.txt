@@ -13,10 +13,10 @@ He_II_1640     R      optically_thin     3.43e-15  3.43e-14     --      3.834e+2
 He_II_3203     A      optically_thin     4.49e-25  4.49e-24     --      2.463e+22
 He_II_4686     A      optically_thin     6.05e-24  6.05e-23     --      5.682e+22
 He_II_10124    A      optically_thin     1.00e-30  1.00e-29     --      4.855e+21
-He_I_5876      C      saturated          2.05e+06  2.05e+07     --      6.305e+33
+He_I_5876      C      saturated          2.05e+06  2.05e+07     --      6.303e+33
 He_I_6678      A      optically_thin     0.00e+00  0.00e+00     --      5.234e+37
-He_I_7065      C      saturated          2.75e+05  2.75e+06     --      2.127e+33
-He_I_10830     C      saturated          4.97e+06  4.97e+07     --      7.206e+33
+He_I_7065      C      saturated          2.75e+05  2.75e+06     --      2.126e+33
+He_I_10830     C      saturated          4.97e+06  4.97e+07     --      7.203e+33
 Halpha         A      optically_thin     0.00e+00  0.00e+00     --      9.123e+39
 Hbeta          A      optically_thin     0.00e+00  0.00e+00     --      3.158e+39
 Hgamma         A      optically_thin     0.00e+00  0.00e+00     --      1.485e+39

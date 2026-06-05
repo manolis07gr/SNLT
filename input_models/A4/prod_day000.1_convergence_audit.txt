@@ -3,7 +3,7 @@
 ==============================================================================
 
 Final L_line: 9.0549e+39 erg/s
-L_line variation across 3 iterations: 0.000% (range 9.0549e+39 – 9.0549e+39)
+L_line variation across 4 iterations: 0.000% (range 9.0549e+39 – 9.0549e+39)
 
 L_line is INVARIANT across iterations (<1%).
 Any per-zone n_3 oscillation visible below is NUMERICAL,
@@ -12,7 +12,8 @@ not affecting the global line answer.
 Per-iteration history (worst-oscillating zone):
 
    it       L_line     Δn3_max   zone      r [cm]    X_HII        n_e    T [K]         n_3       J_bar
-    1   9.0549e+39    1467.39%     53   5.111e+15   1.0000  9.209e+07     6409   6.936e+02   2.949e-09
-    2   9.0549e+39       2.08%      2   1.853e+15   1.0000  7.724e+08     9773   5.881e+03   3.523e-09
+    1   9.0549e+39    1469.41%     53   5.111e+15   1.0000  9.209e+07     6409   6.945e+02   3.113e-09
+    2   9.0549e+39       3.82%      4   1.980e+15   1.0000  6.725e+08     9662   5.526e+03   5.302e-09
+    3   9.0549e+39       1.68%      0   1.725e+15   1.0000  8.993e+08     9955   7.656e+03   1.213e-08
 
-Most-frequently-worst zone: idx=53  (1/2 iters)
+Most-frequently-worst zone: idx=53  (1/3 iters)

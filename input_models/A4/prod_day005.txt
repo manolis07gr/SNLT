@@ -3,18 +3,19 @@
 ==============================================================================
 
 snapshot: mesa.day005_post_Lbol_max.data
-runtime:  1.2 min
-RT iterations used: 2
+runtime:  1.4 min
+RT iterations used: 3
 velocity smoothing: σ = 25.0 km/s
 
 L_line (converged): 1.012e+40 erg/s
 
 (metrics from smoothed F_norm)
-Peak  F = 5.045 at Δv = +29 km/s
-Trough F = 1.290 at Δv = -400 km/s
-Global peak F = 5.138 at Δv = +0 km/s
+Peak  F = 4.883 at Δv = +29 km/s
+Trough F = 1.339 at Δv = -200 km/s
+Global peak F = 5.097 at Δv = -28 km/s
 
 RT iteration history (L_line, Δn_3_max):
   iter 0: L_line = 1.012e+40, Δn_3_max = 0.00%
-  iter 1: L_line = 1.012e+40, Δn_3_max = 96186.33%
-  iter 2: L_line = 1.012e+40, Δn_3_max = 1.82%
+  iter 1: L_line = 1.012e+40, Δn_3_max = 93329.08%
+  iter 2: L_line = 1.012e+40, Δn_3_max = 3.59%
+  iter 3: L_line = 1.012e+40, Δn_3_max = 1.48%

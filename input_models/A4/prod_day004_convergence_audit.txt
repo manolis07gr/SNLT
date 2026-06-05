@@ -3,7 +3,7 @@
 ==============================================================================
 
 Final L_line: 9.9335e+39 erg/s
-L_line variation across 5 iterations: 0.000% (range 9.9335e+39 – 9.9335e+39)
+L_line variation across 7 iterations: 0.000% (range 9.9335e+39 – 9.9335e+39)
 
 L_line is INVARIANT across iterations (<1%).
 Any per-zone n_3 oscillation visible below is NUMERICAL,
@@ -12,12 +12,14 @@ not affecting the global line answer.
 Per-iteration history (worst-oscillating zone):
 
    it       L_line     Δn3_max   zone      r [cm]    X_HII        n_e    T [K]         n_3       J_bar
-    1   9.9335e+39   74301.08%     53   5.054e+15   0.9970  9.332e+07     6156   2.248e+00   3.250e-07
-    2   9.9335e+39      21.50%      0   1.670e+15   1.0000  8.918e+08     9075   1.716e+02   7.854e-10
-    3   9.9335e+39       4.13%      0   1.670e+15   1.0000  8.918e+08     9075   1.787e+02   6.004e-10
-    4   9.9335e+39       2.97%      0   1.670e+15   1.0000  8.918e+08     9075   1.840e+02   4.842e-10
+    1   9.9335e+39   73154.35%     53   5.054e+15   0.9970  9.332e+07     6156   2.213e+00   3.138e-07
+    2   9.9335e+39      11.62%     51   4.926e+15   1.0000  9.891e+07     6373   2.018e+01   1.411e-09
+    3   9.9335e+39      10.62%      0   1.670e+15   1.0000  8.918e+08     9075   1.930e+02   3.204e-10
+    4   9.9335e+39       5.94%      0   1.670e+15   1.0000  8.918e+08     9075   1.815e+02   5.366e-10
+    5   9.9335e+39       3.44%      0   1.670e+15   1.0000  8.918e+08     9075   1.753e+02   6.852e-10
+    6   9.9335e+39       3.18%      0   1.670e+15   1.0000  8.918e+08     9075   1.808e+02   5.516e-10
 
-Most-frequently-worst zone: idx=0  (3/4 iters)
+Most-frequently-worst zone: idx=0  (4/6 iters)
   → A SINGLE zone is dominating the convergence diagnostic.
   Likely physical cause: line radiative trapping in a high-τ dense zone.
   If L_line is invariant (above), this is benign.

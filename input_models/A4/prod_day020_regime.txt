@@ -21,7 +21,7 @@ Halpha         B      saturated          8.76e+05  8.76e+06     --      1.146e+4
 Hbeta          C      saturated          1.89e+05  1.89e+06     --      3.913e+39
 Hgamma         C      saturated          6.32e+04  6.32e+05     --      1.845e+39
 Palpha         C      saturated          4.45e+06  4.45e+07     --      4.659e+38
-Pbeta          C      saturated          5.78e+05  5.78e+06     --      3.496e+38
+Pbeta          C      saturated          5.77e+05  5.77e+06     --      3.496e+38
 
 Per-line action recommendations:
 ------------------------------------------------------------------------------------------------

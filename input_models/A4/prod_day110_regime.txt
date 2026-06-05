@@ -8,20 +8,20 @@ Hα (production RT-NLTE): L_line = 2.030e+40 erg/s
 
 line           grade  regime             τ_med      τ_max      β_med      L_line[erg/s] 
 ------------------------------------------------------------------------------------------------
-Halpha_prod    A      saturated          3.27e+04  3.27e+05     --      2.030e+40
+Halpha_prod    A      saturated          3.25e+04  3.25e+05     --      2.030e+40
 He_II_1640     R      optically_thin     3.35e-30  3.35e-29     --      4.069e+04
 He_II_3203     A      optically_thin     1.27e-30  1.27e-29     --      5.159e+01
 He_II_4686     A      optically_thin     1.18e-29  1.18e-28     --      1.422e+02
 He_II_10124    A      optically_thin     2.97e-29  2.97e-28     --      1.017e+01
-He_I_5876      B      optically_thick    1.66e+03  1.66e+04     --      3.195e+37
+He_I_5876      B      optically_thick    1.66e+03  1.66e+04     --      3.201e+37
 He_I_6678      B      intermediate       1.16e-01  1.16e+00     --      5.192e+38
-He_I_7065      B      optically_thick    2.26e+02  2.26e+03     --      1.520e+37
-He_I_10830     C      saturated          9.89e+04  9.89e+05     --      3.396e+38
-Halpha         B      saturated          3.27e+04  3.27e+05     --      2.030e+40
+He_I_7065      B      optically_thick    2.26e+02  2.26e+03     --      1.522e+37
+He_I_10830     C      saturated          9.89e+04  9.89e+05     --      3.402e+38
+Halpha         B      saturated          3.25e+04  3.25e+05     --      2.030e+40
 Hbeta          B      optically_thick    4.72e+03  4.72e+04     --      6.806e+39
 Hgamma         B      optically_thick    1.58e+03  1.58e+04     --      3.219e+39
-Palpha         C      saturated          1.47e+04  1.47e+05     --      8.249e+38
-Pbeta          B      optically_thick    1.79e+03  1.79e+04     --      6.173e+38
+Palpha         C      saturated          1.48e+04  1.48e+05     --      8.249e+38
+Pbeta          B      optically_thick    1.81e+03  1.81e+04     --      6.173e+38
 
 Per-line action recommendations:
 ------------------------------------------------------------------------------------------------

@@ -1,47 +1,73 @@
 # SNLT pipeline — Future Work (prioritized)
 
 Ordered by priority. Each item lists the gap, why it matters, and a concrete
-first step.
+first step. **Status tags:** ✅ DONE · ◑ PARTIAL · ☐ OPEN.
 
 ---
 
 ## P0 — Data-plumbing fixes (cheap, blocking for publication)
 
-**1. Shared late-epoch snapshot bug.**
-The batch loader substitutes a single common file for late epochs when a
+**1. Shared late-epoch snapshot bug.  ✅ DONE.**
+~~The batch loader substitutes a single common file for late epochs when a
 model-specific snapshot is missing, producing byte-identical day-150/160 (A),
 day-120–160 (C), day-160 (B) rows across *all* models — including no-CSM
-controls. *Fix:* make the snapshot resolver skip an epoch that has no
-model-local file instead of falling back to a shared path; emit a warning
-listing skipped epochs. Until fixed, truncate every series at its
-continuum-collapse epoch (already the physics-motivated cut).
+controls.~~ *Fixed* in `production_runner.py` (`detect_shared_snapshots`): in
+`--batch` STELLA mode the loader content-hashes each snapshot against the
+same-named file in sibling model directories and SKIPS any byte-identical copy
+(a non-model-local shared placeholder), emitting a per-epoch warning. Override
+with `--keep-shared-snapshots`. No-op outside the model-grid layout. The skip
+coincides with the physics-motivated continuum-collapse truncation.
 
-**2. Regime-grade should know about composition.**
-`Halpha_prod` is graded "A" even in H-free models where the line is numerical
-noise. *Fix:* gate the H-line grades on a minimum H abundance / minimum
-`L_line` floor, and the He-line grades likewise; emit "no element" instead of a
-trust grade.
+**2. Regime-grade should know about composition.  ◑ PARTIAL.**
+`Halpha_prod` is still graded "A" even in H-free models. The composition switch
+needed for the fix now exists (`continuum_compgen.is_h_free`, ⟨X_H⟩ < 1e-3, and
+`mean_X_H`); the remaining work is to wire it into `regime_diagnostics` to gate
+the H-line grades on a minimum H abundance / `L_line` floor (and He-line grades
+likewise) and emit "no element" instead of a trust grade.
 
 ---
 
 ## P1 — Physics for the regimes we already touch
 
-**3. Saturated-line radiative transfer (IIn / Ibn interaction phase).**
-The single-shot kernel cannot represent saturated transport (τ≫1), so in the
-dense-CSM phase the line *shapes* and profile-integrated EWs are factor-of-few
-and the absolute luminosities are factor-of-two. This is the dominant physics
-limitation for the interaction epochs we most care about. *Fix:* a proper
-multiple-electron-scattering + per-line escape-probability RT module (iterated
-J_bar per line, not just Hα), validated against the production Hα. This would
-upgrade most B/C grades from B/C to A and make He EWs quotable.
+**3. Saturated-line radiative transfer (IIn / Ibn interaction phase).  ✅ DONE
+(local EP; nonlocal ALI deferred).**
+~~The single-shot kernel cannot represent saturated transport (τ≫1)...~~
+*Resolved* behind the opt-in `--saturated-rt` flag (`line_rt_escape.py`):
+  - **Luminosity:** a numeric check proved the single-shot β luminosity is
+    *already* the first-principles escape-probability luminosity for the He-NLTE
+    populations (`escape_probability_luminosity()`; identity verified to 1e-5).
+    So the fix DROPS the empirical Hα-anchored `R_flat` for thick He lines and
+    keeps the bare β value — removing the empirical anchor (the stated goal).
+  - **Shape:** `thomson_multiscatter()` applies the multiple-electron-scattering
+    redistribution (photon-conserving; broadens wings, suppresses peak).
+  - The mode label is `He-NLTE(thick,EP-esc)`; `regime_diagnostics` reports it
+    honestly (no longer claims an Hα anchor).
+*Deliberately deferred:* the **nonlocal iterated-J̄ / ALI** solver. A local
+closed-form EP cannot beat single-shot β without the continuum-pumped source,
+which over-pumps recombination lines by ~10³× — so the residual ~factor-2
+(nonlocal escape suppression) is still an explicit uncertainty, not papered over.
+`ep_source_function()` is retained as a diagnostic / ALI foundation.
 
-**4. Continuum / energy budget without hydrogen.**
-The recombination-budget and continuum normalization were built and validated
-for H-rich gas. For the H-free He-rich (C-series) interaction the He lines come
-from the He-NLTE solver (correct machinery), but the overall budget and
-`L_cont_band` are unvalidated, and `L_cont_band` collapses unphysically at cold
-compact late epochs. *Fix:* a composition-general continuum treatment and a
-He-anchored budget analogous to the H case-B decrement.
+**4. Continuum / energy budget without hydrogen.  ✅ DONE (guard + diagnostics;
+upstream opacity deferred).**
+~~The recombination-budget and continuum normalization were built for H-rich
+gas... `L_cont_band` collapses unphysically at cold compact late epochs.~~
+*Resolved* behind `--he-budget` (AUTO-enabled when ⟨X_H⟩ < 1e-3) in
+`continuum_compgen.py`:
+  - **Composition-general continuum-collapse guard:** detects the Wien collapse
+    (`4πR²σT_phot⁴ ≪ L_phot`) and floors each line's `L_cont_band` to the
+    energy-conserving color temperature (`4πR²σT_floor⁴ = L_phot`), per line via
+    the Planck ratio. Fixes `L_corr/L_cont_band` EW estimates. Profile shapes
+    untouched. (Validated on C1: correctly *no-op* at warm day100, floors at the
+    cold late epochs.)
+  - **Energy-conservation check** (Σ L_line ≤ L_phot) and a **first-principles
+    He decrement** referenced to He I 10830 (no external anchor — per the chosen
+    budget policy).
+*Deliberately deferred:* the upstream root-fix — He bound-free/free-free
+continuum opacity in `opacity.py` / `photosphere_v2.py` so the H-free photosphere
+is placed correctly in the first place (touches the most-validated module). The
+guard corrects the *symptom* (collapsed `L_cont_band`) energy-consistently; the
+opacity fix would remove the *cause*.
 
 ---
 

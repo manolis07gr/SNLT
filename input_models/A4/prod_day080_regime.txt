@@ -8,20 +8,20 @@ Hα (production RT-NLTE): L_line = 6.068e+40 erg/s
 
 line           grade  regime             τ_med      τ_max      β_med      L_line[erg/s] 
 ------------------------------------------------------------------------------------------------
-Halpha_prod    A      saturated          4.54e+04  4.54e+05     --      6.068e+40
+Halpha_prod    A      saturated          4.50e+04  4.50e+05     --      6.068e+40
 He_II_1640     R      optically_thin     6.09e-30  6.09e-29     --      1.898e+06
 He_II_3203     A      optically_thin     1.00e-30  1.00e-29     --      5.549e+04
 He_II_4686     A      optically_thin     9.21e-30  9.21e-29     --      1.282e+05
 He_II_10124    A      optically_thin     2.32e-29  2.32e-28     --      1.094e+04
-He_I_5876      B      optically_thick    7.34e+03  7.34e+04     --      7.872e+37
-He_I_6678      B      intermediate       3.57e+00  3.57e+01     --      4.728e+37
-He_I_7065      B      optically_thick    9.99e+02  9.99e+03     --      3.770e+37
-He_I_10830     C      saturated          1.44e+05  1.44e+06     --      1.048e+39
-Halpha         B      saturated          4.54e+04  4.54e+05     --      6.068e+40
-Hbeta          B      optically_thick    7.26e+03  7.26e+04     --      2.042e+40
+He_I_5876      B      optically_thick    7.34e+03  7.34e+04     --      7.905e+37
+He_I_6678      B      intermediate       3.57e+00  3.57e+01     --      4.748e+37
+He_I_7065      B      optically_thick    9.99e+02  9.99e+03     --      3.786e+37
+He_I_10830     C      saturated          1.44e+05  1.44e+06     --      1.052e+39
+Halpha         B      saturated          4.50e+04  4.50e+05     --      6.068e+40
+Hbeta          B      optically_thick    7.28e+03  7.28e+04     --      2.042e+40
 Hgamma         B      optically_thick    2.43e+03  2.43e+04     --      9.652e+39
-Palpha         C      saturated          4.17e+04  4.17e+05     --      2.466e+39
-Pbeta          B      optically_thick    5.10e+03  5.10e+04     --      1.846e+39
+Palpha         C      saturated          3.69e+04  3.69e+05     --      2.466e+39
+Pbeta          B      optically_thick    4.51e+03  4.51e+04     --      1.846e+39
 
 Per-line action recommendations:
 ------------------------------------------------------------------------------------------------

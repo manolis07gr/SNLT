@@ -8,16 +8,16 @@ Hα (production RT-NLTE): L_line = 1.078e+40 erg/s
 
 line           grade  regime             τ_med      τ_max      β_med      L_line[erg/s] 
 ------------------------------------------------------------------------------------------------
-Halpha_prod    A      saturated          8.03e+05  8.03e+06     --      1.078e+40
+Halpha_prod    A      saturated          8.02e+05  8.02e+06     --      1.078e+40
 He_II_1640     R      optically_thin     1.57e-21  1.57e-20     --      1.208e+18
 He_II_3203     A      optically_thin     2.06e-28  2.06e-27     --      7.760e+16
 He_II_4686     A      optically_thin     2.00e-27  2.00e-26     --      1.790e+17
 He_II_10124    A      optically_thin     3.51e-27  3.51e-26     --      1.530e+16
-He_I_5876      C      saturated          1.69e+06  1.69e+07     --      2.326e+38
+He_I_5876      C      saturated          1.69e+06  1.69e+07     --      2.322e+38
 He_I_6678      A      optically_thin     0.00e+00  0.00e+00     --      5.968e+37
-He_I_7065      C      saturated          2.29e+05  2.29e+06     --      8.513e+37
-He_I_10830     C      saturated          6.07e+06  6.07e+07     --      3.495e+38
-Halpha         B      saturated          8.03e+05  8.03e+06     --      1.078e+40
+He_I_7065      C      saturated          2.29e+05  2.29e+06     --      8.499e+37
+He_I_10830     C      saturated          6.07e+06  6.07e+07     --      3.489e+38
+Halpha         B      saturated          8.02e+05  8.02e+06     --      1.078e+40
 Hbeta          C      saturated          1.84e+05  1.84e+06     --      3.684e+39
 Hgamma         C      saturated          6.49e+04  6.49e+05     --      1.737e+39
 Palpha         C      saturated          4.46e+06  4.46e+07     --      4.384e+38

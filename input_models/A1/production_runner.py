@@ -40,6 +40,7 @@ import os
 import re
 import sys
 import time
+import hashlib
 import argparse
 import numpy as np
 from glob import glob
@@ -696,6 +697,8 @@ def process_snapshot(snap_path, n_per=100_000, n_chunks=2,
                       he_lines_n_packets=50_000,
                       he_lines_calibration='f_cont_bb',
                       he_lines_use_existing_kernel=True,
+                      saturated_rt=False,
+                      he_budget=False,
                       verbose=True):
     """Full processing for one snapshot. Returns result dict.
 
@@ -1428,6 +1431,8 @@ def process_snapshot(snap_path, n_per=100_000, n_chunks=2,
                 production_halpha=prod_Ha_info,
                 profile_method=line_profile_method,
                 lock=line_profile_lock,
+                saturated_rt=saturated_rt,
+                he_budget=he_budget,
                 verbose=True)
             result['he_spectra_summary'] = {
                 ln: {'L_line': float(sp['L_line']),
@@ -1448,16 +1453,26 @@ def process_snapshot(snap_path, n_per=100_000, n_chunks=2,
                 # so the diagnostic shows that the RT-NLTE Hα is grade-A
                 # while the Phase-5 Hα (empirical R-anchor) is grade-B.
                 if isinstance(prod_Ha_info, dict):
+                    # P0 #2: gate on H abundance — in H-free models the
+                    # production Hα is numerical noise (grade 'N'), not grade-A.
+                    try:
+                        import continuum_compgen as _cg
+                        _xh_prod = _cg.mean_X_H(snap)
+                    except Exception:
+                        _xh_prod = None
                     _prod_Ha_row = _regdiag.classify_line(
                         'Halpha',
                         tau_med=float(he_spectra.get('Halpha', {}).get('tau_med', np.nan)),
-                        tau_max=None, beta_med=None)
-                    _prod_Ha_row['grade'] = 'A'   # full RT-NLTE
-                    _prod_Ha_row['rationale'] = (
-                        'Full RT-NLTE iteration in production_runner '
-                        '(L_line invariant across iters to <0.01%).')
-                    _prod_Ha_row['paper_action'] = (
-                        'Quote production L_line and EW directly. Grade-A.')
+                        tau_max=None, beta_med=None,
+                        x_elem=_xh_prod,
+                        L_line=float(prod_Ha_info.get('L_line', np.nan)))
+                    if _prod_Ha_row.get('grade') != 'N':
+                        _prod_Ha_row['grade'] = 'A'   # full RT-NLTE
+                        _prod_Ha_row['rationale'] = (
+                            'Full RT-NLTE iteration in production_runner '
+                            '(L_line invariant across iters to <0.01%).')
+                        _prod_Ha_row['paper_action'] = (
+                            'Quote production L_line and EW directly. Grade-A.')
                     _prod_Ha_row['line'] = 'Halpha_prod'
                     _prod_Ha_row['epoch_d'] = snap.get('epoch_d', None)
                     _prod_Ha_row['L_line'] = float(prod_Ha_info.get('L_line', np.nan))
@@ -1472,11 +1487,13 @@ def process_snapshot(snap_path, n_per=100_000, n_chunks=2,
                     production_halpha=prod_Ha_info)
                 # Stash on result for the batch-end cross-epoch summary
                 result['regime_rows'] = _rows
+                _ng = sum(1 for r in _rows if r['grade'] == 'N')
                 print(f"[regime] Saved {_diag_path}  "
                       f"({sum(1 for r in _rows if r['grade']=='A')} grade-A, "
                       f"{sum(1 for r in _rows if r['grade']=='B')} grade-B, "
                       f"{sum(1 for r in _rows if r['grade']=='C')} grade-C, "
-                      f"{sum(1 for r in _rows if r['grade']=='R')} grade-R)")
+                      f"{sum(1 for r in _rows if r['grade']=='R')} grade-R"
+                      + (f", {_ng} grade-N" if _ng else "") + ")")
             except Exception as _re:
                 print(f"[regime] WARNING: per-snapshot diagnostic failed: {_re}")
                 import traceback as _rtb
@@ -2209,6 +2226,81 @@ def plot_ionization_structure(snap, result, out_prefix):
 
 # ---------- Batch processing ----------
 
+def _file_md5(path, _cache={}):
+    """Content hash of a file, memoized on (abspath, mtime, size)."""
+    try:
+        st = os.stat(path)
+    except OSError:
+        return None
+    key = (os.path.abspath(path), st.st_mtime, st.st_size)
+    if key in _cache:
+        return _cache[key]
+    h = hashlib.md5()
+    try:
+        with open(path, 'rb') as fh:
+            for chunk in iter(lambda: fh.read(1 << 20), b''):
+                h.update(chunk)
+    except OSError:
+        return None
+    digest = h.hexdigest()
+    _cache[key] = digest
+    return digest
+
+
+def detect_shared_snapshots(snap_paths, search_root=None):
+    """Identify batch snapshots that are byte-identical to the same-named
+    snapshot in a *sibling* model directory.
+
+    Background — the 'shared late-epoch snapshot' bug: when a model-specific
+    STELLA snapshot is missing for a late epoch, one common snapshot was staged
+    by copying it verbatim into several model directories. A genuinely
+    model-local snapshot is unique to its directory; a shared copy is
+    byte-for-byte identical to a sibling's file of the same name, and processing
+    it reproduces identical per-line output rows across models (including the
+    no-CSM controls). Such a copy is not a reliable model-specific state and
+    should be skipped (the cut coincides with the physics-motivated
+    continuum-collapse truncation).
+
+    Detection is content-based (md5) rather than path-based because the shared
+    files are physically present in each directory and parse normally — there is
+    no model-local-vs-shared distinction at the path level, and an anomalous
+    zone count only flags some of them (e.g. day160) but not others (day150).
+
+    Returns a list of dicts {'path', 'basename', 'sibling'} — one per snapshot
+    that matches a sibling-directory file of identical content. Empty list when
+    there are no sibling directories (e.g. a standalone run dir), so this is a
+    no-op outside the model-grid layout.
+    """
+    if not snap_paths:
+        return []
+    # All batch snapshots live in one model directory.
+    model_dir = os.path.dirname(os.path.abspath(snap_paths[0]))
+    parent = search_root or os.path.dirname(model_dir)
+    if not parent or not os.path.isdir(parent):
+        return []
+    # Sibling model directories = immediate subdirs of the parent, minus ours.
+    siblings = []
+    for name in sorted(os.listdir(parent)):
+        cand = os.path.join(parent, name)
+        if os.path.isdir(cand) and os.path.abspath(cand) != model_dir:
+            siblings.append(cand)
+    if not siblings:
+        return []
+    shared = []
+    for p in snap_paths:
+        base = os.path.basename(p)
+        my_hash = _file_md5(p)
+        if my_hash is None:
+            continue
+        for sib in siblings:
+            sib_file = os.path.join(sib, base)
+            if os.path.isfile(sib_file) and _file_md5(sib_file) == my_hash:
+                shared.append({'path': p, 'basename': base,
+                               'sibling': os.path.basename(sib)})
+                break
+    return shared
+
+
 def process_batch(snap_paths, args):
     """Process all snapshots and generate batch summary + movie."""
     print(f"\n{'#'*78}")
@@ -2261,6 +2353,8 @@ def process_batch(snap_paths, args):
                 he_lines_n_packets=args.he_lines_n_packets,
                 he_lines_calibration=args.he_lines_calibration,
                 he_lines_use_existing_kernel=not args.he_lines_reference_mc,
+                saturated_rt=args.saturated_rt,
+                he_budget=args.he_budget,
                 verbose=True,
             )
             results.append(r)
@@ -2708,6 +2802,13 @@ def main():
                              'Matched against the epoch number parsed from each '
                              'snapshot filename. Useful to thin out densely-sampled '
                              'early epochs. Matching tolerance is 1e-4.')
+    parser.add_argument('--keep-shared-snapshots', action='store_true',
+                        help='Do NOT skip late-epoch snapshots that are '
+                             'byte-identical to a sibling model directory (the '
+                             'shared-late-snapshot staging artifact). By default '
+                             'such non-model-local copies are skipped in --batch '
+                             'mode (STELLA) to avoid byte-identical duplicate rows '
+                             'across models; pass this to process them anyway.')
     parser.add_argument('--n-per', type=int, default=100_000,
                         help='packets per chunk in final production run')
     parser.add_argument('--n-chunks', type=int, default=2,
@@ -3030,6 +3131,27 @@ def main():
                              'kernel. Faster and self-contained for debugging, '
                              'but produces emission-only profiles (no P-Cygni '
                              'absorption).')
+    parser.add_argument('--he-budget', action='store_true',
+                        help='Phase 5b (P1 #4): composition-general continuum '
+                             'guard + He-budget diagnostics. Detects the '
+                             'unphysical Wien collapse of L_cont_band at '
+                             'cold/compact (esp. H-free) photospheres and floors '
+                             'it to the energy-conserving color temperature '
+                             '(4πR²σT⁴ = L_phot), so L_corr/L_cont_band EW '
+                             'estimates are physical. Adds an energy-conservation '
+                             'check and a first-principles He decrement (no '
+                             'anchor). Profile shapes untouched. AUTO-enabled when '
+                             '⟨X_H⟩ < 1e-3 (H-free).')
+    parser.add_argument('--saturated-rt', action='store_true',
+                        help='Phase 5b (P1 #3): for optically-thick He lines '
+                             '(τ_med ≥ 1), replace the interim Hα-anchored escape '
+                             'correction (R_flat) with the first-principles '
+                             'continuum-pumped escape-probability source function '
+                             '(line_rt_escape). Removes the empirical Hα anchor '
+                             'from thick-line STRENGTHS; the profile SHAPE is '
+                             'unchanged (still gate-authoritative MC). Opt-in: '
+                             'without this flag, thick-line outputs are '
+                             'byte-identical to before.')
     parser.add_argument('--phase5-movie-out', type=str,
                         default='batch_lines_evolution.mp4',
                         help='Output filename for the batch multi-line '
@@ -3105,6 +3227,29 @@ def main():
             for p, e in skipped:
                 print(f"  skip: {os.path.basename(p)}  (epoch={e})")
 
+        # Detect & skip shared late-epoch snapshots (the 'shared late-epoch
+        # snapshot' bug). A snapshot copied verbatim into several model
+        # directories is not model-local and reproduces byte-identical output
+        # rows across models. STELLA only — the model-grid layout is what makes
+        # the sibling comparison meaningful.
+        if fmt_batch == 'stella':
+            shared = detect_shared_snapshots(snap_paths)
+            if shared:
+                shared_paths = {s['path'] for s in shared}
+                print(f"[batch] shared-snapshot check: {len(shared)} snapshot(s) "
+                      f"byte-identical to a sibling model directory "
+                      f"(non-model-local):")
+                for s in shared:
+                    print(f"  shared: {s['basename']}  "
+                          f"(== {s['sibling']}/{s['basename']})")
+                if args.keep_shared_snapshots:
+                    print("[batch] --keep-shared-snapshots set: processing them "
+                          "anyway (duplicate cross-model rows will result).")
+                else:
+                    snap_paths = [p for p in snap_paths if p not in shared_paths]
+                    print(f"[batch] skipped {len(shared)} shared snapshot(s); "
+                          f"{len(snap_paths)} model-local snapshot(s) remain.")
+
         if not snap_paths:
             print("[batch] All snapshots were skipped — nothing to do.")
             sys.exit(1)
@@ -3157,6 +3302,8 @@ def main():
             he_lines_n_packets=args.he_lines_n_packets,
             he_lines_calibration=args.he_lines_calibration,
             he_lines_use_existing_kernel=not args.he_lines_reference_mc,
+            saturated_rt=args.saturated_rt,
+            he_budget=args.he_budget,
             verbose=True,
         )
 

@@ -8,20 +8,20 @@ Hα (production RT-NLTE): L_line = 6.786e+40 erg/s
 
 line           grade  regime             τ_med      τ_max      β_med      L_line[erg/s] 
 ------------------------------------------------------------------------------------------------
-Halpha_prod    A      saturated          3.32e+04  3.32e+05     --      6.786e+40
+Halpha_prod    A      saturated          3.36e+04  3.36e+05     --      6.786e+40
 He_II_1640     R      optically_thin     3.13e-30  3.13e-29     --      1.305e+05
 He_II_3203     A      optically_thin     1.18e-30  1.18e-29     --      3.427e+02
 He_II_4686     A      optically_thin     1.09e-29  1.09e-28     --      8.494e+02
 He_II_10124    A      optically_thin     2.75e-29  2.75e-28     --      6.757e+01
-He_I_5876      B      optically_thick    2.62e+03  2.62e+04     --      6.788e+37
+He_I_5876      B      optically_thick    2.62e+03  2.62e+04     --      1.164e+39
 He_I_6678      B      intermediate       3.03e-01  3.03e+00     --      7.117e+38
-He_I_7065      B      optically_thick    3.56e+02  3.56e+03     --      3.286e+37
-He_I_10830     C      saturated          1.05e+05  1.05e+06     --      7.033e+38
-Halpha         B      saturated          3.32e+04  3.32e+05     --      6.786e+40
-Hbeta          B      optically_thick    5.45e+03  5.45e+04     --      2.279e+40
+He_I_7065      B      optically_thick    3.56e+02  3.56e+03     --      5.636e+38
+He_I_10830     C      saturated          1.05e+05  1.05e+06     --      1.206e+40
+Halpha         B      saturated          3.36e+04  3.36e+05     --      6.786e+40
+Hbeta          B      optically_thick    5.43e+03  5.43e+04     --      2.279e+40
 Hgamma         B      optically_thick    1.82e+03  1.82e+04     --      1.078e+40
-Palpha         C      saturated          2.37e+04  2.37e+05     --      2.758e+39
-Pbeta          B      optically_thick    2.90e+03  2.90e+04     --      2.064e+39
+Palpha         C      saturated          2.32e+04  2.32e+05     --      2.758e+39
+Pbeta          B      optically_thick    2.84e+03  2.84e+04     --      2.064e+39
 
 Per-line action recommendations:
 ------------------------------------------------------------------------------------------------
@@ -35,14 +35,14 @@ Per-line action recommendations:
     └─ τ < 1 everywhere; single-shot kernel exact.
   He_II_10124    (A): Quote L_line and EW directly. Grade-A.
     └─ τ < 1 everywhere; single-shot kernel exact.
-  He_I_5876      (B): Quote L_line as estimate; note "per-line J_bar iteration would refine to ~factor of 2".
-    └─ Optically thick; empirical Hα-anchored R reduces systematic to factor-of-2.
+  He_I_5876      (B): Quote L_line as first-principles β-escape (no empirical anchor); use the Thomson-broadened profile for shape diagnostics.
+    └─ Optically-thick He: bare single-shot β escape luminosity (= first-principles escape-probability value; empirical Hα anchor REMOVED via --saturated-rt). Profile carries multiple-electron-scattering (Thomson MC). Residual ~factor-2 reflects the absent nonlocal J̄ (ALI) iteration, NOT an anchor.
   He_I_6678      (B): Quote L_line as "Hα-anchored empirical estimate".
     └─ Marginal line; quoting requires τ < 1 epoch flag. Intermediate τ; single-shot β + empirical R is paper-quality.
-  He_I_7065      (B): Quote L_line as "Hα-anchored empirical estimate".
-    └─ Intermediate τ; single-shot β + empirical R is paper-quality.
-  He_I_10830     (C): Plot profile; note absolute scale uncertainty in caption. Use shape diagnostics (FWHM, v_peak) as primary observable.
-    └─ METASTABLE TRIPLET: 2³S → 2³P pumping not iterated. Quote shape; absolute L requires Phase 5b-rigorous. Saturated AND no per-line iteration — absolute L uncertain to factors of 2-5.
+  He_I_7065      (B): Quote L_line as first-principles β-escape (no empirical anchor); use the Thomson-broadened profile for shape diagnostics.
+    └─ Optically-thick He: bare single-shot β escape luminosity (= first-principles escape-probability value; empirical Hα anchor REMOVED via --saturated-rt). Profile carries multiple-electron-scattering (Thomson MC). Residual ~factor-2 reflects the absent nonlocal J̄ (ALI) iteration, NOT an anchor.
+  He_I_10830     (C): Quote L_line as first-principles β-escape (no empirical anchor); use the Thomson-broadened profile for shape diagnostics.
+    └─ METASTABLE TRIPLET: 2³S → 2³P pumping not iterated. Quote shape; absolute L requires Phase 5b-rigorous. Optically-thick He: bare single-shot β escape luminosity (= first-principles escape-probability value; empirical Hα anchor REMOVED via --saturated-rt). Profile carries multiple-electron-scattering (Thomson MC). Residual ~factor-2 reflects the absent nonlocal J̄ (ALI) iteration, NOT an anchor.
   Halpha         (B): Quote L_line with caveat; use peak F and v_peak as primary observables.
     └─ Saturated but with RT-NLTE iteration; absolute L still has ~2x systematic from kernel/iteration interaction.
   Hbeta          (B): Quote L_line as estimate; note "per-line J_bar iteration would refine to ~factor of 2".
@@ -56,7 +56,9 @@ Per-line action recommendations:
 
 Grade legend:
   A = Paper-quality. Quote L and EW directly.
-  B = Paper-quality with caveat. Hα-anchored empirical R.
+  B = Paper-quality with caveat (single-shot β; empirical Hα anchor, OR --saturated-rt first-principles β-escape).
   C = Shape only; absolute L uncertain to factors 2-5.
   R = Reference shape only; atomic physics outside scope.
+
+Note: thick He lines marked EP-esc used --saturated-rt (P1 #3): empirical Hα anchor REMOVED; L_line is the bare single-shot β escape (first-principles), profile carries Thomson multiple-scattering.
 ================================================================================================

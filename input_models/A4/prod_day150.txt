@@ -16,9 +16,9 @@ Global peak F = 1.035 at Δv = +514 km/s
 
 RT iteration history (L_line, Δn_3_max):
   iter 0: L_line = 4.891e+40, Δn_3_max = 0.00%
-  iter 1: L_line = 4.891e+40, Δn_3_max = 1178839.43%
-  iter 2: L_line = 4.891e+40, Δn_3_max = 201.41%
-  iter 3: L_line = 4.891e+40, Δn_3_max = 179.92%
-  iter 4: L_line = 4.891e+40, Δn_3_max = 94.68%
-  iter 5: L_line = 4.891e+40, Δn_3_max = 169.77%
-  iter 6: L_line = 4.891e+40, Δn_3_max = 144.46%
+  iter 1: L_line = 4.891e+40, Δn_3_max = 1198218.96%
+  iter 2: L_line = 4.891e+40, Δn_3_max = 213.45%
+  iter 3: L_line = 4.891e+40, Δn_3_max = 269.23%
+  iter 4: L_line = 4.891e+40, Δn_3_max = 156.59%
+  iter 5: L_line = 4.891e+40, Δn_3_max = 171.18%
+  iter 6: L_line = 4.891e+40, Δn_3_max = 181.96%

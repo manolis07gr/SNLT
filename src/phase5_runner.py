@@ -45,6 +45,8 @@ def run_phase5_for_state(state, snap, n_packets: int = 50000,
                           production_halpha: dict = None,
                           profile_method: str = 'mc',
                           lock: bool = False,
+                          saturated_rt: bool = False,
+                          he_budget: bool = False,
                           verbose: bool = True) -> dict:
     """Run Phase 5 (multi-line MC) on a state populated by Phases 3 + 4.
 
@@ -120,7 +122,7 @@ def run_phase5_for_state(state, snap, n_packets: int = 50000,
     # per-line recombination-budget strengths (no empirical Hα anchor).
     if requested_method == 'formal':
         _apply_recombination_budget(spectra, merged, production_halpha,
-                                    verbose=verbose)
+                                    verbose=verbose, saturated_rt=saturated_rt)
         correction_factor = None
     else:
         # ---- Phase 5b-empirical: Hα-anchored systematic correction (legacy) ----
@@ -135,6 +137,30 @@ def run_phase5_for_state(state, snap, n_packets: int = 50000,
             print(f"[phase5b] Applying R to L_line, EW, (F_norm - 1) for all "
                   f"non-H\u03b1 lines.")
         _apply_empirical_correction(spectra, correction_factor)
+
+    # ---- Phase 5b-compgen (P1 #4): composition-general continuum guard ----
+    # Corrects the per-line continuum LEVEL (energy conservation) so that the
+    # L_corr / L_cont_band EW estimate is physical for H-free / cold-compact
+    # photospheres where the diluted-BB L_cont_band collapses (Wien). NEVER
+    # touches the profile shape. Opt-in via --he-budget; AUTO when X_H < 1e-3.
+    try:
+        import continuum_compgen as _cg
+        _x_h = _cg.mean_X_H(merged)
+        _h_free = _cg.is_h_free(_x_h)
+        if he_budget or _h_free:
+            if verbose and _h_free and not he_budget:
+                print(f"[phase5b/compgen] H-free gas (⟨X_H⟩={_x_h:.1e}) — "
+                      f"composition-general continuum guard auto-enabled.")
+            _T_phot = float(getattr(merged, 'T_phot', float('nan')))
+            _R_phot = float(getattr(merged, 'R_phot_cm', float('nan')))
+            _L_phot = float(getattr(merged, 'L_phot', float('nan')))
+            _cg.apply_continuum_guard(spectra, _T_phot, _R_phot, _L_phot,
+                                      verbose=verbose)
+            _cg.energy_conservation_check(spectra, _L_phot, verbose=verbose)
+            _cg.he_decrement_diagnostic(spectra, verbose=verbose)
+    except Exception as _cg_exc:
+        if verbose:
+            print(f"[phase5b/compgen] guard skipped: {_cg_exc}")
 
     # Save outputs if requested
     if out_prefix is not None:
@@ -257,7 +283,30 @@ def _ion_density(merged, ion_key, n_e):
     return None
 
 
-def _apply_recombination_budget(spectra, merged, production_halpha, verbose=True):
+def _thomson_shape_thick_he(sp, merged, Fn):
+    """Apply multiple electron-scattering redistribution to a thick He line's
+    corrected profile (the '+Thomson MC' part of --saturated-rt). Photon-
+    conserving: L_line and EW are unchanged, only the shape. Returns the (possibly
+    redistributed) Fn; silently returns Fn unchanged on any failure."""
+    import numpy as _np
+    try:
+        import line_rt_escape as _ep
+        tau_es = float(getattr(merged, 'tau_es_total', 0.0) or 0.0)
+        if tau_es <= 0.0:
+            return Fn
+        T_phot = float(getattr(merged, 'T_phot',
+                               _np.asarray(merged.T, float)[-1]))
+        lam_grid = _np.asarray(sp.get('lambda_AA'), float)
+        lam0 = sp.get('lambda_rest', None)
+        if lam0 is None or lam_grid.size != _np.asarray(Fn).size:
+            return Fn
+        return _ep.thomson_multiscatter(lam_grid, Fn, float(lam0), T_phot, tau_es)
+    except Exception:
+        return Fn
+
+
+def _apply_recombination_budget(spectra, merged, production_halpha, verbose=True,
+                                saturated_rt=False):
     """Set per-line strengths from a first-principles recombination budget,
     replacing the empirical Hα-anchored R-factor.
 
@@ -313,7 +362,17 @@ def _apply_recombination_budget(spectra, merged, production_halpha, verbose=True
             # optically-thick He lines have the single-shot escape over-estimate,
             # for which the Hα-anchored R is the interim escape correction.
             if tau_med is not None and tau_med >= 1.0:
-                factor, mode = R_flat, 'He-NLTE(thick,esc-corr)'
+                # Optically-thick He line. Default: the interim Hα-anchored
+                # R_flat escape correction (~factor-2). With --saturated-rt, DROP
+                # the empirical anchor: the bare single-shot β luminosity is the
+                # first-principles escape-probability luminosity (verified
+                # identity, line_rt_escape.escape_probability_luminosity), so
+                # factor = 1.0. The SHAPE then gets multiple electron scattering
+                # applied below (photon-conserving; L/EW unchanged).
+                if saturated_rt:
+                    factor, mode = 1.0, 'He-NLTE(thick,EP-esc)'
+                else:
+                    factor, mode = R_flat, 'He-NLTE(thick,esc-corr)'
             else:
                 factor, mode = 1.0, 'He-NLTE(thin,exact)'
         elif L_p5 and L_p5 > 0:
@@ -325,6 +384,11 @@ def _apply_recombination_budget(spectra, merged, production_halpha, verbose=True
         sp['EW_corrected'] = sp['EW'] * factor
         sp['L_line_corrected'] = sp['L_line'] * factor
         Fn = 1.0 + (_np.asarray(sp['F_norm']) - 1.0) * factor
+        # --saturated-rt: multiple electron-scattering redistribution of the
+        # thick-line SHAPE (photon-conserving — L_line/EW already set above are
+        # unchanged; only the profile is broadened / peak suppressed).
+        if saturated_rt and mode == 'He-NLTE(thick,EP-esc)':
+            Fn = _thomson_shape_thick_he(sp, merged, Fn)
         sp['F_norm_corrected'] = Fn
         sp['peak_F_corrected'] = float(_np.max(Fn))
         sp['strength_mode'] = mode
@@ -335,10 +399,18 @@ def _apply_recombination_budget(spectra, merged, production_halpha, verbose=True
         for nm, md, L in rows:
             print(f"           {nm:12s} {md:22s} L_line={L:.3e} erg/s")
         if any(m.startswith('He-NLTE') for _, m, _ in rows):
-            print("[phase5b] NOTE: He strengths come from the he1/he2 NLTE solvers "
-                  "(ionization + excitation incl. collisional, from the STELLA state). "
-                  "Optically-thick He lines carry a single-shot escape correction "
-                  "(~factor-2); confirm against data when available.")
+            if any(m == 'He-NLTE(thick,EP-esc)' for _, m, _ in rows):
+                print("[phase5b] NOTE: He strengths from the he1/he2 NLTE solvers; "
+                      "optically-thick He lines (--saturated-rt, P1 #3) use the bare "
+                      "single-shot β escape luminosity (= first-principles "
+                      "escape-probability value; empirical Hα anchor REMOVED) with "
+                      "multiple-electron-scattering applied to the profile SHAPE.")
+            else:
+                print("[phase5b] NOTE: He strengths come from the he1/he2 NLTE "
+                      "solvers (ionization + excitation incl. collisional, from the "
+                      "STELLA state). Optically-thick He lines carry a single-shot "
+                      "escape correction (~factor-2); pass --saturated-rt to drop "
+                      "the empirical anchor (bare β escape + Thomson MC shape).")
 
 
 def _apply_empirical_correction(spectra: dict, R):
@@ -418,6 +490,13 @@ def _build_merged_state(state, snap) -> types.SimpleNamespace:
                 'h_levels', 'h_diag', 'h_tau'):
         if hasattr(state, key):
             setattr(merged, key, getattr(state, key))
+
+    # Composition (P1 #4: composition-general continuum guard / H-free switch)
+    for key in ('X_H', 'X_He'):
+        if isinstance(snap, dict) and key in snap:
+            setattr(merged, key, np.asarray(snap[key], float))
+        elif hasattr(state, key):
+            setattr(merged, key, np.asarray(getattr(state, key), float))
 
     return merged
 

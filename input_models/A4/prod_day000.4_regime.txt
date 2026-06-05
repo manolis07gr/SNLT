@@ -13,15 +13,15 @@ He_II_1640     R      optically_thin     7.59e-15  7.59e-14     --      1.037e+2
 He_II_3203     A      optically_thin     1.08e-24  1.08e-23     --      6.663e+22
 He_II_4686     A      optically_thin     1.46e-23  1.46e-22     --      1.537e+23
 He_II_10124    A      optically_thin     1.00e-30  1.00e-29     --      1.313e+22
-He_I_5876      C      saturated          2.07e+06  2.07e+07     --      3.144e+38
+He_I_5876      C      saturated          2.07e+06  2.07e+07     --      3.157e+38
 He_I_6678      A      optically_thin     0.00e+00  0.00e+00     --      5.234e+37
-He_I_7065      C      saturated          2.77e+05  2.77e+06     --      1.056e+38
-He_I_10830     C      saturated          4.77e+06  4.77e+07     --      3.474e+38
+He_I_7065      C      saturated          2.77e+05  2.77e+06     --      1.060e+38
+He_I_10830     C      saturated          4.77e+06  4.77e+07     --      3.488e+38
 Halpha         B      saturated          1.35e+06  1.35e+07     --      9.080e+39
-Hbeta          C      saturated          3.01e+05  3.01e+06     --      3.146e+39
-Hgamma         C      saturated          1.07e+05  1.07e+06     --      1.479e+39
-Palpha         C      saturated          7.27e+06  7.27e+07     --      3.693e+38
-Pbeta          C      saturated          1.02e+06  1.02e+07     --      2.777e+38
+Hbeta          C      saturated          3.00e+05  3.00e+06     --      3.146e+39
+Hgamma         C      saturated          1.06e+05  1.06e+06     --      1.479e+39
+Palpha         C      saturated          6.95e+06  6.95e+07     --      3.693e+38
+Pbeta          C      saturated          9.80e+05  9.80e+06     --      2.777e+38
 
 Per-line action recommendations:
 ------------------------------------------------------------------------------------------------

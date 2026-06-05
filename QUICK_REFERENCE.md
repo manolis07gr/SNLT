@@ -45,6 +45,26 @@ was used. Quote `L_corr` (not `L_raw`) from the `*_lines.txt` files, and quote
 `L_line` rather than peak-F at the interaction-brightening / continuum-collapse
 epochs.
 
+### (d) Optional physics flags (opt-in; defaults reproduce prior results)
+
+| flag | item | what it does |
+|------|------|--------------|
+| `--saturated-rt` | P1 #3 | For optically-thick He lines (τ_med ≥ 1): drops the empirical Hα-anchored `R_flat` and keeps the bare single-shot β escape luminosity (= first-principles escape-probability value), and applies multiple-electron-scattering to the profile SHAPE (`He-NLTE(thick,EP-esc)` mode). Strengths only; the gate still owns the shape. |
+| `--he-budget` | P1 #4 | Composition-general continuum-collapse guard: floors a Wien-collapsed `L_cont_band` to the energy-conserving color temperature, plus an energy-conservation check and a first-principles He decrement (He I 10830 reference). **AUTO-enabled when ⟨X_H⟩ < 1e-3** (H-free), so C-series runs get it without the flag. |
+| `--keep-shared-snapshots` | P0 #1 | Disables the default skip of late-epoch snapshots that are byte-identical to a sibling model dir (the shared-placeholder artifact). |
+
+Without these flags, every output is byte-identical to the pre-P1 pipeline
+(except H-free models, where `--he-budget` auto-engages by design). Validate the
+new physics analytically with `python validate_p1_physics.py` (no pipeline run).
+
+```bash
+# Example: full IIn series with the saturated-line RT and the budget guard
+python production_runner.py --batch \
+       --line-profile-method formal \
+       --he-lines --he1-nlte --he2-nlte \
+       --saturated-rt --he-budget
+```
+
 ---
 
 ## 2. Post-processing & plotting
@@ -102,9 +122,16 @@ Writes `master_table.csv`, `corr_pearson.csv`, `corr_spearman.csv`,
 
 ## 3. Filtering the untrustworthy late epochs
 
-Until the shared-late-snapshot loader bug is fixed, drop each model's
-post-continuum-collapse tail before plotting (use `--t1` to cut at the collapse
-epoch, identified in `batch_metrics.csv` as the point where `L_cont_band` falls
-by orders of magnitude and `tau_es_photoeq` drops below ~0.3). The plotting
-scripts honour `--t1`, so e.g. `--t1 120` keeps only the trustworthy interaction
-phase.
+The **shared-late-snapshot loader bug is now fixed** (P0 #1): `--batch`
+auto-skips byte-identical sibling-directory placeholders at run time, so the
+late rows are no longer duplicated across models (override with
+`--keep-shared-snapshots`). The unphysical `L_cont_band` collapse at cold/compact
+late epochs is addressed by `--he-budget` (auto for H-free; floors the continuum
+energy-consistently).
+
+You may still want to truncate the post-continuum-collapse tail for plotting on
+*physics* grounds (the late nebular phase is not paper-ready): use `--t1` to cut
+at the collapse epoch, identified in `batch_metrics.csv` as the point where
+`L_cont_band` falls by orders of magnitude and `tau_es_photoeq` drops below ~0.3.
+The plotting scripts honour `--t1`, so e.g. `--t1 120` keeps only the trustworthy
+interaction phase.

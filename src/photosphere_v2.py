@@ -207,9 +207,29 @@ def find_photosphere(snap_full, lam_ref_AA=6562.8, populations='saha',
         n_p = np.maximum(n_H_tot - n_HI, 0.0)
 
     # ----- per-zone continuum opacity at reference wavelength -----
+    # P1 #4 root-fix: H-rich gas uses the four H channels (default → results
+    # byte-identical). For H-free (He-rich) gas, add helium free-free — the only
+    # continuum channel that matters at optical/NIR λ (He bound-free thresholds
+    # are deep in the EUV). n_HeII is estimated from the free-electron budget
+    # (leading singly-ionized estimate, capped at the total He); this is
+    # negligible for cold neutral He and grows where He is ionized (the
+    # interaction phase), placing the H-free photosphere more correctly.
+    cont_include = ['es', 'bf', 'H-', 'ff']
+    he_kwargs = {}
+    X_H_mean = float(np.mean(X_H)) if np.ndim(X_H) else float(X_H)
+    if X_H_mean < 1.0e-3:
+        MHE = 6.646e-24                       # g, mass of He atom
+        X_He = snap_full.get('X_He', 0.98)
+        X_He = (np.asarray(X_He, dtype=float) if np.ndim(X_He)
+                else np.full_like(r, float(X_He)))
+        n_He_tot = X_He * rho / MHE
+        n_HeII_est = np.minimum(np.asarray(n_e, dtype=float), n_He_tot)
+        cont_include.append('He-ff')
+        he_kwargs = dict(n_HeII=n_HeII_est,
+                         n_HeIII=np.zeros_like(n_HeII_est))
     kappa_total = op.kappa_cont_total(
         lam_ref_AA, T, n_e, n_p, n_per_lev,
-        include=('es', 'bf', 'H-', 'ff'))
+        include=tuple(cont_include), **he_kwargs)
     kappa_es = op.kappa_thomson(n_e)
     kappa_abs = kappa_total - kappa_es     # absorption-only
     kappa_abs = np.maximum(kappa_abs, 0.0)

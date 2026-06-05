@@ -8,7 +8,7 @@ Hα (production RT-NLTE): L_line = 3.417e+25 erg/s
 
 line           grade  regime             τ_med      τ_max      β_med      L_line[erg/s] 
 ------------------------------------------------------------------------------------------------
-Halpha_prod    A      optically_thin     4.44e-10  4.44e-09     --      3.417e+25
+Halpha_prod    N      no_element         4.44e-10  4.44e-09     --      3.417e+25
 He_II_1640     R      optically_thin     1.64e-30  1.64e-29     --      1.429e-21
 He_II_3203     A      optically_thin     1.00e-30  1.00e-29     --      1.358e-28
 He_II_4686     A      optically_thin     5.78e-30  5.78e-29     --      2.346e-26
@@ -17,16 +17,16 @@ He_I_5876      A      optically_thin     8.60e-14  8.60e-13     --      8.374e+3
 He_I_6678      A      optically_thin     1.55e-13  1.55e-12     --      2.685e+32
 He_I_7065      A      optically_thin     1.06e-14  1.06e-13     --      3.015e+32
 He_I_10830     A      optically_thin     1.72e-02  1.72e-01     --      6.642e+34
-Halpha         A      optically_thin     4.44e-10  4.44e-09     --      3.417e+25
-Hbeta          A      optically_thin     6.38e-11  6.38e-10     --      1.103e+25
-Hgamma         A      optically_thin     2.14e-11  2.14e-10     --      5.251e+24
-Palpha         A      optically_thin     1.52e-10  1.52e-09     --      1.387e+24
-Pbeta          A      optically_thin     1.93e-11  1.93e-10     --      1.032e+24
+Halpha         N      no_element         4.44e-10  4.44e-09     --      3.417e+25
+Hbeta          N      no_element         6.38e-11  6.38e-10     --      1.103e+25
+Hgamma         N      no_element         2.14e-11  2.14e-10     --      5.251e+24
+Palpha         N      no_element         1.52e-10  1.52e-09     --      1.387e+24
+Pbeta          N      no_element         1.93e-11  1.93e-10     --      1.032e+24
 
 Per-line action recommendations:
 ------------------------------------------------------------------------------------------------
-  Halpha_prod    (A): Quote production L_line and EW directly. Grade-A.
-    └─ Full RT-NLTE iteration in production_runner (L_line invariant across iters to <0.01%).
+  Halpha_prod    (N): Do not quote — no hydrogen in the ejecta. (Correct null for this composition.)
+    └─ Hydrogen essentially absent (⟨X_H⟩ = 3.1e-14 < 1e-03); L_line is numerical noise, not a physical line.
   He_II_1640     (R): Plot profile shape and FWHM/velocity. Do not quote absolute L_line as a definitive value.
     └─ RESONANCE LINE: Lyα-cascade and continuum recombination physics not fully modeled; absolute L systematically over-predicted. Use for shape comparison only. Atomic physics outside current implementation scope.
   He_II_3203     (A): Quote L_line and EW directly. Grade-A.
@@ -43,20 +43,21 @@ Per-line action recommendations:
     └─ τ < 1 everywhere; single-shot kernel exact.
   He_I_10830     (A): Quote L_line and EW directly. Grade-A.
     └─ METASTABLE TRIPLET: 2³S → 2³P pumping not iterated. Quote shape; absolute L requires Phase 5b-rigorous. τ < 1 everywhere; single-shot kernel exact.
-  Halpha         (A): Quote L_line and EW directly. Grade-A.
-    └─ τ < 1 everywhere; single-shot kernel exact.
-  Hbeta          (A): Quote L_line and EW directly. Grade-A.
-    └─ Single-shot β; empirical R-scaled. τ < 1 everywhere; single-shot kernel exact.
-  Hgamma         (A): Quote L_line and EW directly. Grade-A.
-    └─ Single-shot β; empirical R-scaled. τ < 1 everywhere; single-shot kernel exact.
-  Palpha         (A): Quote L_line and EW directly. Grade-A.
-    └─ Paschen series; same iteration status as Hβ. τ < 1 everywhere; single-shot kernel exact.
-  Pbeta          (A): Quote L_line and EW directly. Grade-A.
-    └─ Paschen series; same iteration status as Hβ. τ < 1 everywhere; single-shot kernel exact.
+  Halpha         (N): Do not quote — no hydrogen in the ejecta. (Correct null for this composition.)
+    └─ Hydrogen essentially absent (⟨X_H⟩ = 3.1e-14 < 1e-03); L_line is numerical noise, not a physical line.
+  Hbeta          (N): Do not quote — no hydrogen in the ejecta. (Correct null for this composition.)
+    └─ Hydrogen essentially absent (⟨X_H⟩ = 3.1e-14 < 1e-03); L_line is numerical noise, not a physical line.
+  Hgamma         (N): Do not quote — no hydrogen in the ejecta. (Correct null for this composition.)
+    └─ Hydrogen essentially absent (⟨X_H⟩ = 3.1e-14 < 1e-03); L_line is numerical noise, not a physical line.
+  Palpha         (N): Do not quote — no hydrogen in the ejecta. (Correct null for this composition.)
+    └─ Hydrogen essentially absent (⟨X_H⟩ = 3.1e-14 < 1e-03); L_line is numerical noise, not a physical line.
+  Pbeta          (N): Do not quote — no hydrogen in the ejecta. (Correct null for this composition.)
+    └─ Hydrogen essentially absent (⟨X_H⟩ = 3.1e-14 < 1e-03); L_line is numerical noise, not a physical line.
 
 Grade legend:
   A = Paper-quality. Quote L and EW directly.
-  B = Paper-quality with caveat. Hα-anchored empirical R.
+  B = Paper-quality with caveat (single-shot β; empirical Hα anchor, OR --saturated-rt first-principles β-escape).
   C = Shape only; absolute L uncertain to factors 2-5.
   R = Reference shape only; atomic physics outside scope.
+  N = No element (⟨X⟩ < 1e-3); line is numerical noise — do not quote (correct null for this composition).
 ================================================================================================

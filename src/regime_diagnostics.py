@@ -87,6 +87,21 @@ from typing import Optional
 
 import numpy as np
 
+# P0 #2: a line whose element is essentially absent (mean mass fraction below
+# this floor) is numerical noise, not a physical line — graded 'N' (no element)
+# rather than given a trust grade. Matches continuum_compgen.X_H_FREE_THRESH.
+ELEM_FLOOR = 1.0e-3
+
+
+def _line_element(name: str) -> Optional[str]:
+    """Return 'H' or 'He' for a line key, else None. 'Halpha_prod' → 'H'."""
+    if name.startswith('He_'):
+        return 'He'
+    if name.startswith(('Halpha', 'Hbeta', 'Hgamma', 'Hdelta',
+                        'Palpha', 'Pbeta', 'Pgamma')):
+        return 'H'
+    return None
+
 
 # ----------------------------------------------------------------------
 # Line-specific paper rules
@@ -216,7 +231,10 @@ def _generic_regime(tau_med: float, tau_max: float) -> str:
 def classify_line(name: str,
                    tau_med: float,
                    tau_max: Optional[float] = None,
-                   beta_med: Optional[float] = None) -> dict:
+                   beta_med: Optional[float] = None,
+                   strength_mode: Optional[str] = None,
+                   x_elem: Optional[float] = None,
+                   L_line: Optional[float] = None) -> dict:
     """Classify one line into regime + paper-grade trust level.
 
     Parameters
@@ -239,6 +257,30 @@ def classify_line(name: str,
     """
     if tau_max is None:
         tau_max = 10.0 * abs(tau_med) if np.isfinite(tau_med) else np.inf
+
+    # P0 #2: no-element gate. If the line's element is essentially absent
+    # (mean mass fraction < ELEM_FLOOR), the "line" is numerical noise — emit
+    # grade 'N' (no element) instead of a misleading τ-based trust grade.
+    # x_elem is None when composition is unknown → no downgrade (safe default).
+    element = _line_element(name)
+    if (element in ('H', 'He') and x_elem is not None
+            and np.isfinite(x_elem) and x_elem < ELEM_FLOOR):
+        elem_name = 'hydrogen' if element == 'H' else 'helium'
+        return {
+            'regime': 'no_element',
+            'grade': 'N',
+            'rationale': (f'{elem_name.capitalize()} essentially absent '
+                          f'(⟨X_{element}⟩ = {x_elem:.1e} < {ELEM_FLOOR:.0e}); '
+                          f'L_line is numerical noise, not a physical line.'),
+            'paper_action': (f'Do not quote — no {elem_name} in the ejecta. '
+                             f'(Correct null for this composition.)'),
+            'tau_med': float(tau_med),
+            'tau_max': float(tau_max),
+            'beta_med': (float(beta_med) if beta_med is not None
+                         and np.isfinite(beta_med) else None),
+            'iteration_status': 'no_element',
+            'strength_mode': strength_mode,
+        }
 
     regime = _generic_regime(tau_med, tau_max)
     rule = LINE_RULES.get(name, {})
@@ -295,6 +337,21 @@ def classify_line(name: str,
                       'caption. Use shape diagnostics (FWHM, v_peak) as '
                       'primary observable.')
 
+    # P1 #3 (--saturated-rt): if the thick-He empirical Hα anchor was DROPPED in
+    # favour of the first-principles single-shot β escape luminosity + Thomson
+    # multiple-scattering shape, the rationale/action must not claim an
+    # "Hα-anchored empirical R". The grade letter is unchanged (the residual
+    # ~factor-2 is now the absent nonlocal J̄/ALI iteration, not an anchor). The
+    # mode string is set by phase5_runner._apply_recombination_budget.
+    if strength_mode == 'He-NLTE(thick,EP-esc)':
+        rationale = ('Optically-thick He: bare single-shot β escape luminosity '
+                     '(= first-principles escape-probability value; empirical Hα '
+                     'anchor REMOVED via --saturated-rt). Profile carries '
+                     'multiple-electron-scattering (Thomson MC). Residual ~factor-2 '
+                     'reflects the absent nonlocal J̄ (ALI) iteration, NOT an anchor.')
+        action = ('Quote L_line as first-principles β-escape (no empirical anchor); '
+                  'use the Thomson-broadened profile for shape diagnostics.')
+
     if caveat:
         rationale = (caveat + ' ' + rationale).strip()
 
@@ -308,6 +365,7 @@ def classify_line(name: str,
         'beta_med': (float(beta_med) if beta_med is not None
                      and np.isfinite(beta_med) else None),
         'iteration_status': iter_status,
+        'strength_mode': strength_mode,
     }
 
 
@@ -334,6 +392,14 @@ def build_snapshot_table(spectra: dict,
     """
     rows = []
     epoch_d = (snap.get('epoch_d') if isinstance(snap, dict) else None)
+    # P0 #2: mean composition for the no-element gate (None if unavailable)
+    x_h = x_he = None
+    try:
+        import continuum_compgen as _cg
+        x_h = _cg.mean_X_H(snap)
+        x_he = _cg.mean_X_He(snap)
+    except Exception:
+        pass
     for name, sp in spectra.items():
         if name.startswith('_'):    # skip metadata keys
             continue
@@ -346,7 +412,13 @@ def build_snapshot_table(spectra: dict,
         beta_med = sp.get('beta_med', None)
         if beta_med is not None:
             beta_med = float(beta_med)
-        cls = classify_line(name, tau_med, tau_max, beta_med)
+        strength_mode = sp.get('strength_mode', None)
+        _elem = _line_element(name)
+        x_elem = x_h if _elem == 'H' else (x_he if _elem == 'He' else None)
+        L_for_gate = sp.get('L_line_corrected', sp.get('L_line', None))
+        cls = classify_line(name, tau_med, tau_max, beta_med,
+                            strength_mode=strength_mode,
+                            x_elem=x_elem, L_line=L_for_gate)
         cls['line'] = name
         cls['epoch_d'] = epoch_d
         cls['lambda_rest'] = float(sp.get('lambda_rest', np.nan))
@@ -402,9 +474,18 @@ def write_snapshot_diagnostic(filepath: str,
     lines.append('')
     lines.append('Grade legend:')
     lines.append('  A = Paper-quality. Quote L and EW directly.')
-    lines.append('  B = Paper-quality with caveat. Hα-anchored empirical R.')
+    lines.append('  B = Paper-quality with caveat (single-shot β; empirical Hα '
+                 'anchor, OR --saturated-rt first-principles β-escape).')
     lines.append('  C = Shape only; absolute L uncertain to factors 2-5.')
     lines.append('  R = Reference shape only; atomic physics outside scope.')
+    lines.append('  N = No element (⟨X⟩ < 1e-3); line is numerical noise — '
+                 'do not quote (correct null for this composition).')
+    if any(r.get('strength_mode') == 'He-NLTE(thick,EP-esc)' for r in rows):
+        lines.append('')
+        lines.append('Note: thick He lines marked EP-esc used --saturated-rt '
+                     '(P1 #3): empirical Hα anchor REMOVED; L_line is the bare '
+                     'single-shot β escape (first-principles), profile carries '
+                     'Thomson multiple-scattering.')
     lines.append('=' * 96)
     with open(filepath, 'w') as f:
         f.write('\n'.join(lines))

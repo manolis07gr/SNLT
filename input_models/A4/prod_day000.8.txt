@@ -10,9 +10,9 @@ velocity smoothing: σ = 25.0 km/s
 L_line (converged): 9.114e+39 erg/s
 
 (metrics from smoothed F_norm)
-Peak  F = 3.774 at Δv = +29 km/s
-Trough F = 1.207 at Δv = -371 km/s
-Global peak F = 4.281 at Δv = -143 km/s
+Peak  F = 3.906 at Δv = +29 km/s
+Trough F = 1.229 at Δv = -400 km/s
+Global peak F = 4.353 at Δv = -143 km/s
 
 RT iteration history (L_line, Δn_3_max):
   iter 0: L_line = 9.114e+39, Δn_3_max = 0.00%
