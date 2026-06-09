@@ -143,6 +143,14 @@ It was validated against the SuperLite Model A1 IIP Hα (rest-peak amplitude ≈
     bistability variability. An **energy-conservation ceiling** (`L_MAX_FRAC=0.1`
     of L_phot, in `metal_cloudy` + `metal_lines`) rejects any line that converges
     onto the wrong branch and reports tens-of-% of L_bol → falls back to CHIANTI.
+    A second, finer **photon-budget guard** (`metal_lines`, `_PHOTON_BOUND=1e3`)
+    catches the residual spikes that slip under the L_bol ceiling: a Cloudy
+    resonance absolute exceeding the photons PRODUCED in the gas (∑ j dV, the
+    un-dimmed volume-emissivity integral) by >1e3× is a hot-branch artifact (e.g.
+    C IV 1549 @ C4 day5 = 5.7e40 between two ~1e35 epochs) → reverts to the
+    temporally-stable CHIANTI/emissivity absolute (`data_source='chianti-despike'`)
+    and drops Cloudy shape weighting. On the physical cool branch Cloudy ≈ the
+    thin emissivity, so normal epochs are untouched.
   - `metal_cloudy.py` — **Tier-2** (`--metal-cloudy`): override metal ABSOLUTES
     with Cloudy (self-consistent photoionization + NLTE + resonance-line RT),
     fixing C IV 1549 / C III] 1909. Builds a deck from the STELLA state
