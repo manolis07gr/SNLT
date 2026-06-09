@@ -52,7 +52,7 @@ def _line_metrics(d, name):
     EW = float(np.asarray(d['EW_corrected'])[i]) if 'EW_corrected' in d \
         else float(np.asarray(d['EW'])[i])
     lk, fk = name + '__lambda', name + '__F_norm_corrected'
-    peakF = peakv = cont = float('nan')
+    peakF = peakv = cont = cont_edge = float('nan')
     if lk in d.files and fk in d.files:
         lam = np.asarray(d[lk], float); Fn = np.asarray(d[fk], float)
         lam0 = float(np.asarray(d['lambda_rest'])[i])
@@ -63,10 +63,15 @@ def _line_metrics(d, name):
             dv = (lam / lam0 - 1.0) * C_KMS
             j = int(np.nanargmax(np.where(finite, Fn, -np.inf)))
             peakF = float(Fn[j]); peakv = float(dv[j])
-            fw = finite & (np.abs(dv) > 0.82 * max(abs(dv.min()), abs(dv.max())))
+            win = max(abs(dv.min()), abs(dv.max()))
+            fw = finite & (np.abs(dv) > 0.82 * win)
+            fw_edge = finite & (np.abs(dv) > 0.95 * win)   # the very edge
             if fw.sum() >= 3:
                 cont = float(np.nanmedian(Fn[fw]))
-    return dict(L=L, EW=EW, peakF=peakF, peakv=peakv, cont=cont)
+            cont_edge = (float(np.nanmedian(Fn[fw_edge]))
+                         if fw_edge.sum() >= 3 else cont)
+    return dict(L=L, EW=EW, peakF=peakF, peakv=peakv, cont=cont,
+                cont_edge=cont_edge)
 
 
 def main():
@@ -101,14 +106,20 @@ def main():
                 tag = f"[{model} day{ep:g} {ln}]"
                 if not np.isfinite(m['L']) or m['L'] < 0:
                     anomalies.append(f"{tag} L_line non-finite/negative: {m['L']}")
-                # continuum renorm: far-wing F/F_cont must be ~1.0 — ONLY for the
-                # H/He lines (the emergent-continuum renorm applies to them).
-                # Metals are line-centre-normalized with cont-suppression handling
-                # for UV resonance lines, so the far-wing test does not apply.
+                # continuum renorm: far-wing F/F_cont must be ~1.0 — ONLY for H/He
+                # lines (metals are line-centre-normalized). BUT only flag when the
+                # far-wing is a FLAT continuum that's off 1.0 (a genuine renorm
+                # issue). A broad/thick line (He I 10830, IIn Hα) fills the window,
+                # so its "far-wing" is a SLOPED line wing, not continuum — the
+                # renorm correctly declines to normalize against it, and that is
+                # not an error. Distinguish via the slope between 0.82·win and the
+                # very edge (0.95·win): flat (|Δ|<0.1) → real continuum.
+                _flat = (np.isfinite(m.get('cont_edge', np.nan)) and
+                         abs(m['cont'] - m['cont_edge']) < 0.10)
                 if (ln in HHE_LINES and np.isfinite(m['cont'])
-                        and not (0.80 <= m['cont'] <= 1.20)):
+                        and not (0.80 <= m['cont'] <= 1.20) and _flat):
                     anomalies.append(f"{tag} continuum off 1.0 "
-                                     f"(far-wing F/F_cont={m['cont']:.2f}) "
+                                     f"(flat far-wing F/F_cont={m['cont']:.2f}) "
                                      f"— renorm regression?")
                 # H presence: H-rich models must have real Hα; C-series ~0
                 if ln == 'Halpha':

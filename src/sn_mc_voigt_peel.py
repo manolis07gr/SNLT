@@ -655,7 +655,13 @@ def run_mc_voigt(
 
     r_t = r[i0:]; v_t = v[i0:]; T_t = T[i0:]; ne_t = n_e[i0:]
     nl_t = n_lower[i0:]; nu_t = n_upper[i0:]
-    dvdr_t = np.gradient(v_t, r_t)
+    with np.errstate(divide='ignore', invalid='ignore'):
+        dvdr_t = np.gradient(v_t, r_t)
+    # robust to DUPLICATE STELLA shock radii: a raw gradient is NaN there (zero
+    # spacing) and poisons the Sobolev τ → NaN line flux. Replace non-finite
+    # zones with the SIGNED homologous gradient v/r (= 1/t_exp). (velocity_grad)
+    dvdr_t = np.where(np.isfinite(dvdr_t), dvdr_t,
+                      v_t / np.maximum(np.abs(r_t), 1e-30))
 
     # destruction probability per line event, per zone
     if eps_dest is None:
@@ -1362,7 +1368,13 @@ def run_mc_voigt_peel(
     ne_t = n_e[i0:]
     nl_t = n_lower[i0:]
     nu_t = n_upper[i0:]
-    dvdr_t = np.gradient(v_t, r_t)
+    with np.errstate(divide='ignore', invalid='ignore'):
+        dvdr_t = np.gradient(v_t, r_t)
+    # robust to DUPLICATE STELLA shock radii: a raw gradient is NaN there (zero
+    # spacing) and poisons the Sobolev τ → NaN line flux. Replace non-finite
+    # zones with the SIGNED homologous gradient v/r (= 1/t_exp). (velocity_grad)
+    dvdr_t = np.where(np.isfinite(dvdr_t), dvdr_t,
+                      v_t / np.maximum(np.abs(r_t), 1e-30))
 
     # Boundaries
     r_src_inner = r_t[0]
