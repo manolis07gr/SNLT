@@ -285,6 +285,21 @@ def build_deck(state, snap=None, include_xray=True, iterate=True,
     pad = 0.02 * (lr[-1] - lr[0] + 1e-6)
     lr_tab = np.concatenate(([lr[0] - pad], lr, [lr[-1] + pad]))
     ln_tab = np.concatenate(([ln[0]], ln, [ln[-1]]))   # flat density at the pads
+    # Cloudy's readLaw requires STRICTLY increasing radii ("Radii must be in
+    # increasing order. Sorry."). STELLA piles many zones at near-identical radii
+    # in the dense shock shell; at the %.6f log precision actually written, these
+    # collapse to EXACT duplicates (e.g. 135 rows at log r=15.2253 for a 552-zone
+    # day-10 deck) and abort the whole Cloudy run — which then silently degrades
+    # the resonance line to its CHIANTI fallback and makes C IV flicker epoch to
+    # epoch. Enforce strict monotonicity ON THE WRITTEN GRID: work in integer
+    # micro-log units (1 unit = 10^-6 in log r, the %.6f resolution), force each
+    # entry ≥ previous + 1 unit, convert back. The nudge is ≤ a few ppm in r per
+    # collapsed row — physically negligible, and exact (no float drift).
+    micro = np.round(lr_tab * 1.0e6).astype(np.int64)
+    for i in range(1, micro.size):
+        if micro[i] <= micro[i - 1]:
+            micro[i] = micro[i - 1] + 1
+    lr_tab = micro.astype(float) * 1.0e-6
     A("dlaw table radius")
     for lri, lni in zip(lr_tab, ln_tab):
         A(f"continue {lri:.6f} {lni:.6f}")
@@ -385,7 +400,7 @@ def parse_emissivity(path, r_in):
     return out
 
 
-def run_cloudy(deck, linelist, r_in=None, workdir=None, timeout=240, keep=False):
+def run_cloudy(deck, linelist, r_in=None, workdir=None, timeout=480, keep=False):
     """Run Cloudy on `deck`, returning (lums, emiss, reason) where lums =
     {cloudy_label: L_erg_s}, emiss = {cloudy_label: (radius_cm, emiss)} (empty if
     r_in is None or no .emis), reason a status string. Robust to abort/timeout."""

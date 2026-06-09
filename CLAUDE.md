@@ -143,15 +143,25 @@ It was validated against the SuperLite Model A1 IIP Hα (rest-peak amplitude ≈
     bistability variability. An **energy-conservation ceiling** (`L_MAX_FRAC=0.1`
     of L_phot, in `metal_cloudy` + `metal_lines`) rejects any line that converges
     onto the wrong branch and reports tens-of-% of L_bol → falls back to CHIANTI.
-    **Known open issue (Cloudy intermittency).** Cloudy occasionally crashes for a
-    single epoch's deck (`no line-list output`); the resonance line (C IV 1549)
-    then falls back to the CHIANTI single-β value, which for a β≈1e-7 thick
-    resonance line is a ~5-dex UNDERESTIMATE — so C IV flickers between its strong
-    Cloudy value (~1e40 when C³⁺ is abundant) and the weak β-dimmed fallback,
-    epoch-to-epoch, purely on whether Cloudy converged. The fix is (a) Cloudy
-    per-epoch robustness and/or (b) a proper resonance-line escape fallback (NOT
-    the single-β emissivity) so the absolute is Cloudy-failure-robust. See
-    FUTURE_WORK.
+    **Cloudy intermittency — root-caused + FIXED.** Cloudy was crashing on a
+    single epoch's deck (`[Stop in readLaw … Radii must be in increasing order]`)
+    while succeeding on its neighbour, so the resonance line (C IV 1549) fell back
+    to the CHIANTI single-β value — a ~5-dex UNDERESTIMATE for a β≈1e-7 thick
+    resonance line — making C IV flicker (e.g. C4 day5 Cloudy 5.7e40 vs day10
+    fallback 8.6e34, both C³⁺≈0.9). Cause: STELLA piles many zones at near-equal
+    radii in the dense shock shell; at the `%.6f` log precision the deck writes,
+    they collapse to **exact-duplicate dlaw rows** (135 of them in a 552-zone
+    day-10 deck) and Cloudy's `readLaw` rejects non-strictly-increasing radii.
+    Fix in `build_deck`: enforce strict monotonicity ON THE WRITTEN GRID via
+    integer micro-log units (force each row ≥ prev + 10⁻⁶ in log r; a ≤few-ppm
+    nudge). Verified on the preserved deck: readLaw abort gone, day-10 C IV →
+    8.3e40 (matches day5). Also surfaced that these dense decks are slow
+    (~250 s / 3 iterations, resonance-RT-limited, NOT dlaw-size-limited), so
+    `run_cloudy` timeout was raised 240→480 s so they complete instead of timing
+    out into the CHIANTI fallback. `run_cloudy` also now PRESERVES any failing
+    deck to `./cloudy_failures/` (or `$SNLT_CLOUDY_DEBUG`). *Residual caveat:* the
+    dense decks don't fully converge in 3 iterations — a factor-level (not dex)
+    uncertainty on the thick resonance absolute.
   - `metal_cloudy.py` — **Tier-2** (`--metal-cloudy`): override metal ABSOLUTES
     with Cloudy (self-consistent photoionization + NLTE + resonance-line RT),
     fixing C IV 1549 / C III] 1909. Builds a deck from the STELLA state

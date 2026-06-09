@@ -130,25 +130,35 @@ ionization and CSM clumping/filling-factor are not modelled (Cloudy is
 steady-state, smooth); lines are transported independently (no blending). Absolute
 He-regime continuum normalization (P1) bounds the EW reliability for thick UV lines.
 
-**5b. Cloudy intermittency → C IV resonance-line flicker (OPEN, root-cause known).**
+**5b. Cloudy intermittency → C IV resonance-line flicker — ROOT-CAUSED + FIXED.**
 The back-test surfaced an apparent C IV 1549 "spike" at C4 day5 (5.7e40 between
 ~1e35 neighbours). Re-running with per-epoch Cloudy tracing showed it is NOT a
 Cloudy thermal-bistability spike (an earlier photon-budget guard built on that
-mis-diagnosis was reverted). The real cause: **Cloudy intermittently crashes**
-(`no line-list output`) on a single epoch's deck while succeeding on its
-neighbour — day5 (C³⁺=0.96) got the Cloudy resonance-RT absolute (5.7e40,
-EW≈−10 Å), but day10 (C³⁺=0.88, comparable) crashed and fell back to the
-**CHIANTI single-β** value (8.6e34). For a β≈1e-7 optically-thick resonance line
-that single-shot β escape is a ~5-dex UNDERESTIMATE, so C IV flips between its
-strong physical value and the weak fallback purely on Cloudy's per-epoch
-convergence. `run_cloudy` now PRESERVES the failing deck + console to
-`./cloudy_failures/` (or `$SNLT_CLOUDY_DEBUG`) with a loud pointer, so the crash
-can be reproduced. *Fix (two prongs):* (a) harden the per-epoch deck so Cloudy
-converges every epoch (inspect the preserved decks — likely a `dlaw`/abundance/
-stop-criterion edge case at the high-ionization epochs); (b) replace the
-resonance-line CHIANTI fallback with a proper resonance escape (Sobolev/EP, as
-`line_rt_escape` does for thick He lines) so the absolute is Cloudy-failure-robust
-and the time series stops flickering even when an epoch's Cloudy run is lost.
+mis-diagnosis was reverted). The real cause: **Cloudy was crashing** on a single
+epoch's deck while succeeding on its neighbour — day5 (C³⁺=0.96) got the Cloudy
+resonance-RT absolute (5.7e40, EW≈−10 Å), but day10 (C³⁺=0.88, comparable)
+crashed and fell back to the **CHIANTI single-β** value (8.6e34), a ~5-dex
+UNDERESTIMATE for a β≈1e-7 thick resonance line — so C IV flipped between its
+strong physical value and the weak fallback purely on whether Cloudy ran.
+The preserved failing deck (`run_cloudy` now saves it to `./cloudy_failures/` or
+`$SNLT_CLOUDY_DEBUG`) gave the exact abort: `[Stop in readLaw … Radii must be in
+increasing order]`. STELLA piles many zones at near-equal radii in the dense
+shock shell; at the `%.6f` log precision the deck writes, 135 of them collapsed
+to **exact-duplicate dlaw rows**, which Cloudy's `readLaw` rejects (it needs
+STRICTLY increasing radii). *Fixes applied:*
+- `build_deck` now enforces strict monotonicity ON THE WRITTEN GRID using integer
+  micro-log units (each row ≥ prev + 10⁻⁶ in log r; a ≤few-ppm physically-null
+  nudge). **Verified on the preserved deck**: the readLaw abort is gone and the
+  day-10 C IV absolute → 8.3e40, matching day5 — the flicker is removed.
+- `run_cloudy` timeout 240→480 s: the dense decks take ~250 s / 3 iterations
+  (resonance-RT-limited; NOT dlaw-table-size-limited — a 200-row deck was just as
+  slow), so 240 s was clipping them into the same CHIANTI fallback.
+
+*Residual (real future work):* these dense high-τ decks **do not fully converge in
+3 iterations** ("did not converge"), a factor-level (not dex) uncertainty on the
+thick resonance absolute. Options: raise `iterate to convergence max`, or add a
+proper resonance escape (Sobolev/EP, as `line_rt_escape` does for thick He lines)
+as a Cloudy-failure-robust fallback so even a lost epoch doesn't collapse 5 dex.
 
 **6. Forbidden / nebular-phase lines.**
 The late, optically-thin (τ_es ≲ 0.3) epochs are nebular, where neither the
