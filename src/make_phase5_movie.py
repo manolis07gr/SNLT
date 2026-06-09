@@ -94,6 +94,10 @@ def main(argv=None):
                    choices=['all', 'metal', 'he', 'h'],
                    help="which lines to animate: 'all' (default), 'metal' "
                         "(C/O/Ne — P2 #5), 'he', or 'h'.")
+    p.add_argument('--grid', action='store_true',
+                   help="instead of a movie, save a STATIC grid PNG tiling the "
+                        "selected lines (rows) across all epochs (columns). "
+                        "--out should be a .png.")
     args = p.parse_args(argv)
 
     files = sorted(glob.glob(args.pattern), key=_epoch_from_name)
@@ -143,6 +147,42 @@ def main(argv=None):
     import matplotlib
     matplotlib.use('Agg')
     import matplotlib.pyplot as plt
+
+    # ---- static GRID mode: tile lines (rows) × epochs (columns) into one PNG ----
+    if args.grid:
+        nep = len(frames)
+        fig, axes = plt.subplots(nlines, nep,
+                                 figsize=(max(1.9 * nep, 4.0), max(1.5 * nlines, 3.0)),
+                                 squeeze=False)
+        for ri, n in enumerate(order):
+            for ci, (ep, fr) in enumerate(frames):
+                ax = axes[ri][ci]
+                ax.axhline(1.0, color='gray', ls=':', lw=0.4)
+                ax.axvline(0.0, color='gray', ls=':', lw=0.4)
+                if n in fr:
+                    ax.plot(fr[n]['dv'], fr[n]['F'], lw=0.7, color='C3'
+                            if _is_metal(n) else ('C0' if _is_he(n) else 'C2'))
+                    ax.set_xlim(*xlim[n])
+                if ri == 0:
+                    ax.set_title(f"{ep:g}d", fontsize=7)
+                if ci == 0:
+                    ax.set_ylabel(n.replace('_', ' '), fontsize=6.5)
+                ax.tick_params(labelsize=5)
+                if ri < nlines - 1:
+                    ax.set_xticklabels([])
+        fig.suptitle(f"{args.species}-line evolution grid  "
+                     f"(rows = lines, columns = epoch [days]; F/F_cont vs Δv)",
+                     fontsize=11)
+        fig.tight_layout(rect=(0, 0, 1, 0.975))
+        out_png = args.out
+        if not out_png.lower().endswith('.png'):
+            out_png = out_png.rsplit('.', 1)[0] + '_grid.png'
+        fig.savefig(out_png, dpi=120)
+        plt.close(fig)
+        print(f"[phase5-movie] Saved grid {out_png}  "
+              f"({nlines} lines × {nep} epochs)")
+        return
+
     from matplotlib.animation import FuncAnimation, PillowWriter
 
     ncols = 5

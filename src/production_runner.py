@@ -2460,6 +2460,19 @@ def process_batch(snap_paths, args):
                                     '--species', _sp])
                     except Exception as _me:
                         print(f"[phase5] WARNING: {_sp} movie failed: {_me}")
+                # static evolution GRIDS (rows = lines, columns = epochs) — the
+                # per-snapshot {prefix}_metal_lines.png give the per-epoch view;
+                # these tile the whole series into one overview PNG.
+                if getattr(args, 'metal_lines', False):
+                    for _sp, _gout in [('metal', 'batch_metal_grid.png'),
+                                       ('he', 'batch_he_grid.png')]:
+                        try:
+                            print(f"[phase5] Building {_sp}-line evolution grid "
+                                  f"→ {_gout}...")
+                            movie_main([pattern, '--out', _gout,
+                                        '--species', _sp, '--grid'])
+                        except Exception as _ge:
+                            print(f"[phase5] WARNING: {_sp} grid failed: {_ge}")
             else:
                 print(f"\n[phase5] No Phase 5 NPZ files found; skipping movie.")
         except Exception as e:
