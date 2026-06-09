@@ -446,11 +446,6 @@ def compute_metal_lines(state, snap=None, win_kms: float = 5000.0,
             resonance_beta_med = float(np.median(beta_res[np.asarray(n_ion) > 0])
                                        if np.any(np.asarray(n_ion) > 0) else 1.0)
         L_emiss = float(np.sum(j_abs * dV))
-        # un-dimmed local volume-emissivity integral = the line photons PRODUCED
-        # in the gas (no escape dimming). This is a hard photon budget: the
-        # emergent luminosity cannot exceed it except by the bounded continuum-
-        # pumping / ionization-balance margin below.
-        L_thin_total = float(np.sum(j * dV))
         if not (np.isfinite(L_emiss) and L_emiss > 0):
             continue
         # --- absolute L_line: Cloudy Tier-2 ONLY for genuine RESONANCE lines
@@ -465,28 +460,6 @@ def compute_metal_lines(state, snap=None, win_kms: float = 5000.0,
         if has_cloudy:
             L_line = float(cloudy_L[name])
             data_source = 'cloudy'
-            # PHOTON-BUDGET / thermal-bistability guard. Cloudy's thermal solution
-            # is occasionally bistable: at a single epoch it can converge onto the
-            # hot branch and report a resonance-line luminosity orders of magnitude
-            # above neighbours (e.g. C IV 1549 @ C4 day5: 5.7e40 between two ~1e35
-            # epochs). Such a value is a numerical artifact, not RT — the emergent
-            # line cannot exceed the photons PRODUCED in the gas (∑ j dV) by more
-            # than a generous factor covering resonance-RT escape enhancement and
-            # ionization-balance uncertainty between our ladder and Cloudy. On the
-            # physical (cool) branch Cloudy ≈ the thin emissivity, so this guard
-            # leaves every normal epoch untouched and reverts only the spike to the
-            # temporally-stable CHIANTI/emissivity absolute.
-            _PHOTON_BOUND = 1.0e3
-            if L_thin_total > 0 and L_line > _PHOTON_BOUND * L_thin_total:
-                if verbose:
-                    print(f"[metal-lines] {name}: Cloudy L={L_line:.2e} exceeds "
-                          f"{_PHOTON_BOUND:.0g}× produced-photon budget "
-                          f"(∑j dV={L_thin_total:.2e}) — thermal-bistability "
-                          f"artifact, reverting to CHIANTI/emissivity "
-                          f"L={L_emiss:.2e}")
-                L_line = L_emiss
-                data_source = 'chianti-despike'
-                has_cloudy = False        # also drop Cloudy shape weighting below
         else:
             L_line = L_emiss
         # energy-conservation ceiling (mirrors metal_cloudy): an over-bright thin

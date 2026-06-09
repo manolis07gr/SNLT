@@ -36,6 +36,7 @@ density exceeds the floor and the floor is inert.
 """
 from __future__ import annotations
 import os
+import re
 import shutil
 import subprocess
 import tempfile
@@ -393,15 +394,19 @@ def run_cloudy(deck, linelist, r_in=None, workdir=None, timeout=240, keep=False)
         return {}, {}, "cloudy executable not found"
     own_tmp = workdir is None
     wd = workdir or tempfile.mkdtemp(prefix="snlt_cloudy_")
+    _preserve = False                       # keep the workdir if Cloudy failed
     try:
         with open(os.path.join(wd, "model.in"), "w") as fh:
             fh.write(deck)
         with open(os.path.join(wd, "cloudy.lines"), "w") as fh:
             fh.write(linelist)
+        proc = None
         try:
             proc = subprocess.run([exe, "-r", "model"], cwd=wd,
                                   capture_output=True, text=True, timeout=timeout)
         except subprocess.TimeoutExpired:
+            _preserve = True
+            _dump_cloudy_failure(wd, "cloudy timed out", None)
             return {}, {}, "cloudy timed out"
         lpath = os.path.join(wd, ".lines")
         lums = parse_line_list(lpath)
@@ -409,7 +414,8 @@ def run_cloudy(deck, linelist, r_in=None, workdir=None, timeout=240, keep=False)
         if r_in is not None:
             emiss = parse_emissivity(os.path.join(wd, ".emis"), r_in)
         if not lums:
-            # surface the Cloudy stop reason for diagnostics
+            # surface the Cloudy stop reason for diagnostics, and PRESERVE the
+            # deck + console so the per-epoch crash can be reproduced/inspected.
             reason = "no line-list output"
             outp = os.path.join(wd, "model.out")
             if os.path.isfile(outp):
@@ -417,18 +423,53 @@ def run_cloudy(deck, linelist, r_in=None, workdir=None, timeout=240, keep=False)
                     with open(outp) as fh:
                         txt = fh.read()
                     for key in ("DISASTER", "ABORT", "did not converge",
-                                "PROBLEM"):
+                                "PROBLEM", "FATAL", "[Stop in", "insanity"):
                         i = txt.find(key)
                         if i >= 0:
-                            reason = txt[i:i + 120].splitlines()[0]
+                            reason = txt[i:i + 160].splitlines()[0].strip()
                             break
                 except Exception:
                     pass
+            _preserve = True
+            _dump_cloudy_failure(wd, reason, proc)
             return {}, emiss, reason
         return lums, emiss, "ok"
     finally:
-        if own_tmp and not keep:
+        if own_tmp and not keep and not _preserve:
             shutil.rmtree(wd, ignore_errors=True)
+
+
+def _dump_cloudy_failure(wd, reason, proc):
+    """On a Cloudy failure, copy the deck + console to a persistent, discoverable
+    location (``$SNLT_CLOUDY_DEBUG`` or ./cloudy_failures/<timestamp-less id>/) and
+    print a loud one-line pointer, so an intermittent per-epoch crash (works at
+    one epoch, aborts at the next) can be reproduced and root-caused instead of
+    silently degrading to the CHIANTI fallback."""
+    try:
+        base = os.environ.get("SNLT_CLOUDY_DEBUG") or \
+            os.path.join(os.getcwd(), "cloudy_failures")
+        os.makedirs(base, exist_ok=True)
+        # deterministic id from the deck size + a slug of the reason (avoids
+        # Python's per-process-randomized str hash); collisions just overwrite.
+        mp = os.path.join(wd, "model.in")
+        sz = os.path.getsize(mp) if os.path.isfile(mp) else 0
+        slug = re.sub(r'[^A-Za-z0-9]+', '_', (reason or 'fail'))[:24].strip('_')
+        dst = os.path.join(base, f"fail_{sz}_{slug}")
+        os.makedirs(dst, exist_ok=True)
+        for fn in ("model.in", "model.out", ".lines", ".emis"):
+            src = os.path.join(wd, fn)
+            if os.path.isfile(src):
+                shutil.copy2(src, os.path.join(dst, fn.lstrip(".") or fn))
+        if proc is not None:
+            tail = "\n".join((proc.stdout or "").splitlines()[-25:])
+            errtail = "\n".join((proc.stderr or "").splitlines()[-25:])
+            with open(os.path.join(dst, "console.txt"), "w") as fh:
+                fh.write(f"reason: {reason}\nreturncode: {proc.returncode}\n"
+                         f"--- stdout tail ---\n{tail}\n"
+                         f"--- stderr tail ---\n{errtail}\n")
+        print(f"[cloudy] FAILURE preserved → {dst}  (reason: {reason})")
+    except Exception as _e:
+        print(f"[cloudy] (could not preserve failure deck: {_e})")
 
 
 def metal_line_luminosities(state, snap=None, include_xray=True, iterate=True,

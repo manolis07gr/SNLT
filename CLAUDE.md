@@ -143,14 +143,15 @@ It was validated against the SuperLite Model A1 IIP Hα (rest-peak amplitude ≈
     bistability variability. An **energy-conservation ceiling** (`L_MAX_FRAC=0.1`
     of L_phot, in `metal_cloudy` + `metal_lines`) rejects any line that converges
     onto the wrong branch and reports tens-of-% of L_bol → falls back to CHIANTI.
-    A second, finer **photon-budget guard** (`metal_lines`, `_PHOTON_BOUND=1e3`)
-    catches the residual spikes that slip under the L_bol ceiling: a Cloudy
-    resonance absolute exceeding the photons PRODUCED in the gas (∑ j dV, the
-    un-dimmed volume-emissivity integral) by >1e3× is a hot-branch artifact (e.g.
-    C IV 1549 @ C4 day5 = 5.7e40 between two ~1e35 epochs) → reverts to the
-    temporally-stable CHIANTI/emissivity absolute (`data_source='chianti-despike'`)
-    and drops Cloudy shape weighting. On the physical cool branch Cloudy ≈ the
-    thin emissivity, so normal epochs are untouched.
+    **Known open issue (Cloudy intermittency).** Cloudy occasionally crashes for a
+    single epoch's deck (`no line-list output`); the resonance line (C IV 1549)
+    then falls back to the CHIANTI single-β value, which for a β≈1e-7 thick
+    resonance line is a ~5-dex UNDERESTIMATE — so C IV flickers between its strong
+    Cloudy value (~1e40 when C³⁺ is abundant) and the weak β-dimmed fallback,
+    epoch-to-epoch, purely on whether Cloudy converged. The fix is (a) Cloudy
+    per-epoch robustness and/or (b) a proper resonance-line escape fallback (NOT
+    the single-β emissivity) so the absolute is Cloudy-failure-robust. See
+    FUTURE_WORK.
   - `metal_cloudy.py` — **Tier-2** (`--metal-cloudy`): override metal ABSOLUTES
     with Cloudy (self-consistent photoionization + NLTE + resonance-line RT),
     fixing C IV 1549 / C III] 1909. Builds a deck from the STELLA state
