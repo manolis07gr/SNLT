@@ -159,9 +159,15 @@ It was validated against the SuperLite Model A1 IIP Hα (rest-peak amplitude ≈
     (~250 s / 3 iterations, resonance-RT-limited, NOT dlaw-size-limited), so
     `run_cloudy` timeout was raised 240→480 s so they complete instead of timing
     out into the CHIANTI fallback. `run_cloudy` also now PRESERVES any failing
-    deck to `./cloudy_failures/` (or `$SNLT_CLOUDY_DEBUG`). *Residual caveat:* the
-    dense decks don't fully converge in 3 iterations — a factor-level (not dex)
-    uncertainty on the thick resonance absolute.
+    deck to `./cloudy_failures/` (or `$SNLT_CLOUDY_DEBUG`). **Convergence —
+    resolved.** A 12-iteration test on the densest C4 deck showed the CARBON lines
+    we extract converge to ~1% by iteration 4-5 (C IV 1549: 8.25e40→8.19e40→
+    8.10e40 over iters 3/4/5; C III 1909 stable to <2% from iter 2); the deck's
+    global "did not converge" is tripped only by an unrelated *He-like
+    subordinate* line, not the metal lines. So `iterate to convergence max` was
+    raised 3→6 (the lines fully settle; Cloudy stops early when converged, so
+    sparse fast epochs cost nothing) and the timeout 480→720 s. The thick
+    resonance absolute is now converged to ~1%, not a factor.
   - `metal_cloudy.py` — **Tier-2** (`--metal-cloudy`): override metal ABSOLUTES
     with Cloudy (self-consistent photoionization + NLTE + resonance-line RT),
     fixing C IV 1549 / C III] 1909. Builds a deck from the STELLA state

@@ -317,7 +317,14 @@ def build_deck(state, snap=None, include_xray=True, iterate=True,
     A("# === controls ===")
     A("no molecules")                             # hot ionized CSM; speeds + stabilises
     if iterate:
-        A("iterate to convergence max 3")         # resonance-line RT needs iterations
+        # Resonance-line RT needs several iterations. Convergence test on the
+        # densest C4 deck (552 zones): the CARBON lines we extract converge to ~1%
+        # by iteration 4-5 (C IV 1549: 8.25e40→8.19e40→8.10e40 over iters 3/4/5),
+        # while Cloudy's GLOBAL "did not converge" flag is tripped only by an
+        # unrelated He-like subordinate line. max 6 lets the lines fully settle;
+        # Cloudy stops early when converged, so the fast (sparse) epochs that
+        # converge in 2-3 iterations cost nothing extra.
+        A("iterate to convergence max 6")
     A("stop temperature 1000 K")
     A('save last line list ".lines" "cloudy.lines" emergent absolute')
     # per-zone LOCAL line emissivity [erg cm^-3 s^-1] vs depth — used to weight
@@ -400,7 +407,7 @@ def parse_emissivity(path, r_in):
     return out
 
 
-def run_cloudy(deck, linelist, r_in=None, workdir=None, timeout=480, keep=False):
+def run_cloudy(deck, linelist, r_in=None, workdir=None, timeout=720, keep=False):
     """Run Cloudy on `deck`, returning (lums, emiss, reason) where lums =
     {cloudy_label: L_erg_s}, emiss = {cloudy_label: (radius_cm, emiss)} (empty if
     r_in is None or no .emis), reason a status string. Robust to abort/timeout."""

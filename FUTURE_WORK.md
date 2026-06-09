@@ -154,11 +154,21 @@ STRICTLY increasing radii). *Fixes applied:*
   (resonance-RT-limited; NOT dlaw-table-size-limited — a 200-row deck was just as
   slow), so 240 s was clipping them into the same CHIANTI fallback.
 
-*Residual (real future work):* these dense high-τ decks **do not fully converge in
-3 iterations** ("did not converge"), a factor-level (not dex) uncertainty on the
-thick resonance absolute. Options: raise `iterate to convergence max`, or add a
-proper resonance escape (Sobolev/EP, as `line_rt_escape` does for thick He lines)
-as a Cloudy-failure-robust fallback so even a lost epoch doesn't collapse 5 dex.
+*Convergence — RESOLVED.* A 12-iteration test on the densest C4 deck (the same
+552-zone day-10 deck) showed the CARBON lines we extract converge to ~1% by
+iteration 4-5 (C IV 1549: 9.17e40 / 7.91e40 / 8.25e40 / 8.19e40 / 8.10e40 over
+iters 1-5 → successive Δ +4.3% / -0.8% / -1.1%; C III 1909 stable to <2% from
+iteration 2). Cloudy's GLOBAL "did not converge" message is `because He-like
+subord[inate]` — an unrelated He-like ion line, NOT the metals — so the lines we
+actually read off are converged even though the global flag trips. `iterate to
+convergence max` raised 3→6 (the deck naturally converges at iter 5; Cloudy stops
+early when converged, so sparse fast epochs are unaffected), timeout 480→720 s.
+The thick resonance absolute is now converged to ~1%, not a factor.
+
+*Remaining nicety (optional):* a proper resonance escape (Sobolev/EP, as
+`line_rt_escape` does for thick He lines) as a Cloudy-failure-robust fallback, so
+that even if an epoch's Cloudy run is ever lost the resonance line doesn't
+collapse 5 dex to the single-β CHIANTI value.
 
 **6. Forbidden / nebular-phase lines.**
 The late, optically-thin (τ_es ≲ 0.3) epochs are nebular, where neither the
