@@ -143,6 +143,12 @@ def main():
         _c4.run(_check)
     except Exception:
         pass
+    try:
+        import validate_metals as _m5          # added by P2 #5 (optional)
+        print("\n-- P2 #5: C/O/Ne metal lines --")
+        _m5.run(_check)
+    except Exception as _e:
+        print(f"\n-- P2 #5: metal checks skipped ({_e}) --")
     print("\n" + "=" * 70)
     if _fails:
         print(f"RESULT: {len(_fails)} FAILED — {_fails}")

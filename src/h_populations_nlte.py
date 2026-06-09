@@ -650,10 +650,11 @@ def h_populations_nlte(rho, T, n_e, r, v, X_H=0.737,
     n_HI = f_HI * n_H_total
     n_p  = (1.0 - f_HI) * n_H_total
 
-    # velocity gradient with floor
-    dv_dr = np.abs(np.gradient(v, r))
-    min_dvds = v_turb_cms / (r[-1] - r[0])
-    dv_dr = np.maximum(dv_dr, min_dvds)
+    # velocity gradient with floor — robust to DUPLICATE radii (STELLA shock
+    # zones), which make a raw np.gradient(v,r) NaN and would poison the whole
+    # NLTE solve (see velocity_grad).
+    from velocity_grad import robust_dvdr
+    dv_dr = robust_dvdr(v, r, v_turb_cms=v_turb_cms)
 
     # initial guess: start from LTE ratios, scaled to n_HI
     kT = KB * T

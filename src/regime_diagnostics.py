@@ -94,9 +94,16 @@ ELEM_FLOOR = 1.0e-3
 
 
 def _line_element(name: str) -> Optional[str]:
-    """Return 'H' or 'He' for a line key, else None. 'Halpha_prod' → 'H'."""
+    """Return the emitting element ('H','He','C','O','Ne') for a line key, else
+    None. 'Halpha_prod' → 'H'; metal lines like 'C_III_1909' → 'C'."""
     if name.startswith('He_'):
         return 'He'
+    if name.startswith('C_'):
+        return 'C'
+    if name.startswith('Ne_'):
+        return 'Ne'
+    if name.startswith('O_'):
+        return 'O'
     if name.startswith(('Halpha', 'Hbeta', 'Hgamma', 'Hdelta',
                         'Palpha', 'Pbeta', 'Pgamma')):
         return 'H'
@@ -282,6 +289,49 @@ def classify_line(name: str,
             'strength_mode': strength_mode,
         }
 
+    # P2 #5: metal lines (C/O/Ne). strength_mode = 'metal-{mech}-{src}', where
+    # src is 'chianti' (authoritative NLTE emissivity from CHIANTI) or 'prov'
+    # (provisional metal_atoms data). Both are grade B, but the caveat differs:
+    # for CHIANTI lines the atomic data is solid and the residual systematic is
+    # the photoionization ion-balance; for provisional lines the atomic numbers
+    # themselves are placeholders.
+    sm_parts = (strength_mode.split('-') if isinstance(strength_mode, str)
+                else [])
+    if (element in ('C', 'O', 'Ne')
+            or (sm_parts and sm_parts[0] == 'metal')):
+        mech = sm_parts[1] if len(sm_parts) > 1 else 'emissivity'
+        src = sm_parts[2] if len(sm_parts) > 2 else 'prov'
+        if src == 'chianti':
+            rationale = ('CHIANTI NLTE emissivity (authoritative atomic data: '
+                         'multi-level statistical equilibrium, cascades, n_crit). '
+                         'Absolute L scales with the photoionization ion-balance '
+                         '(shock-ID sensitive) and the STELLA abundance — the '
+                         'residual systematic is the IONIZATION, not the line.')
+            action = ('Quote L_line (CHIANTI-NLTE line physics). Note the ion '
+                      'balance as the systematic; a Cloudy ionization would close it.')
+        else:
+            rationale = ('First-principles ' + mech + ' emissivity on '
+                         'photoionization-equilibrium ion densities, but the '
+                         'C/O/Ne atomic data is PROVISIONAL (recombination line / '
+                         'ChiantiPy unavailable). CEL lines carry the n_crit '
+                         'correction.')
+            action = ('Quote as PROVISIONAL: use the profile shape and relative '
+                      'trends; do NOT quote absolute L until the atomic data is '
+                      'verified (install ChiantiPy + CHIANTI for the CEL lines).')
+        return {
+            'regime': 'metal_' + mech + ('_chianti' if src == 'chianti' else ''),
+            'grade': 'B',
+            'rationale': rationale,
+            'paper_action': action,
+            'tau_med': float(tau_med),
+            'tau_max': float(tau_max),
+            'beta_med': (float(beta_med) if beta_med is not None
+                         and np.isfinite(beta_med) else None),
+            'iteration_status': ('metal_chianti' if src == 'chianti'
+                                 else 'metal_provisional'),
+            'strength_mode': strength_mode,
+        }
+
     regime = _generic_regime(tau_med, tau_max)
     rule = LINE_RULES.get(name, {})
     iter_status = rule.get('iteration_status', 'empirical')
@@ -392,14 +442,25 @@ def build_snapshot_table(spectra: dict,
     """
     rows = []
     epoch_d = (snap.get('epoch_d') if isinstance(snap, dict) else None)
-    # P0 #2: mean composition for the no-element gate (None if unavailable)
+    # P0 #2 / P2 #5: mean composition for the no-element gate (None if absent)
     x_h = x_he = None
+    x_C = x_O = x_Ne = None
     try:
         import continuum_compgen as _cg
         x_h = _cg.mean_X_H(snap)
         x_he = _cg.mean_X_He(snap)
     except Exception:
         pass
+    comp = snap.get('composition') if isinstance(snap, dict) else None
+    if isinstance(comp, dict):
+        def _mean_comp(key):
+            a = comp.get(key)
+            if a is None:
+                return None
+            a = np.asarray(a, float)
+            return float(np.mean(a)) if a.size else None
+        x_C = _mean_comp('c12'); x_O = _mean_comp('o16'); x_Ne = _mean_comp('ne20')
+    _x_by_elem = {'H': x_h, 'He': x_he, 'C': x_C, 'O': x_O, 'Ne': x_Ne}
     for name, sp in spectra.items():
         if name.startswith('_'):    # skip metadata keys
             continue
@@ -414,7 +475,7 @@ def build_snapshot_table(spectra: dict,
             beta_med = float(beta_med)
         strength_mode = sp.get('strength_mode', None)
         _elem = _line_element(name)
-        x_elem = x_h if _elem == 'H' else (x_he if _elem == 'He' else None)
+        x_elem = _x_by_elem.get(_elem)
         L_for_gate = sp.get('L_line_corrected', sp.get('L_line', None))
         cls = classify_line(name, tau_med, tau_max, beta_med,
                             strength_mode=strength_mode,
@@ -634,7 +695,8 @@ def compute_per_zone_tau_beta(state, line_info: dict) -> dict:
     """
     r = np.asarray(state.r)
     v = np.asarray(state.v)
-    dv_dr = np.abs(np.gradient(v, r))
+    from velocity_grad import robust_dvdr
+    dv_dr = robust_dvdr(v, r)
     dv_dr = np.maximum(dv_dr, 1e-30)
 
     species = line_info['species']

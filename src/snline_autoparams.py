@@ -190,7 +190,8 @@ def h_populations_auto(rho, T, n_e, r, v, X_H=0.737, X_He=0.249,
     n_p = (1.0 - f_HI) * n_H_total
 
     # radial velocity gradient (cm/s / cm)
-    dv_dr = np.abs(np.gradient(v, r))
+    from velocity_grad import robust_dvdr
+    dv_dr = robust_dvdr(v, r)
     # grid-wide floor. A per-zone floor (v_turb/dr) is tempting but for slow
     # near-monovelocity winds it aggressively over-floors dv/dr (because dr
     # is small), which artificially lowers τ_Ly and hence the n=2 population.
@@ -409,9 +410,8 @@ def compute_emissivity(r, T, n_e, n_p=None, n_2=None, n_3=None, v=None, mask=Non
     tau_Ha = np.zeros_like(r)
     if n_2 is not None and v is not None:
         sigma_Ha = np.pi * EE * EE / (ME * C) * F_HA
-        dv_dr = np.abs(np.gradient(v, r))
-        min_dvds = v_turb_cms / (r[-1] - r[0])
-        dv_dr = np.maximum(dv_dr, min_dvds)
+        from velocity_grad import robust_dvdr
+        dv_dr = robust_dvdr(v, r, v_turb_cms=v_turb_cms)
         tau_Ha = sigma_Ha * LAM_HA * np.maximum(n_2, 0) / dv_dr
         beta_Ha = ((1.0 - np.exp(-np.minimum(tau_Ha, 700.0)))
                    / np.maximum(tau_Ha, 1e-30))
@@ -1390,7 +1390,8 @@ def derive_parameters(snap_arrays: dict, line_name: str = 'Halpha',
             print(f"  NLTE iterations     : {popdiag['iterations']}")
         # diagnostic: Hα self-absorption suppression factor per region
         # (what fraction of naive Case-B emission escapes)
-        dv_dr = np.abs(np.gradient(v, r))
+        from velocity_grad import robust_dvdr
+        dv_dr = robust_dvdr(v, r)
         dv_dr = np.maximum(dv_dr, 20e5/(r[-1]-r[0]))
         sigma_Ha = np.pi * EE * EE / (ME * C) * F_HA
         tau_Ha = sigma_Ha * LAM_HA * np.maximum(n_2, 0) / dv_dr

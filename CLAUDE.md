@@ -47,6 +47,20 @@ It was validated against the SuperLite Model A1 IIP Hα (rest-peak amplitude ≈
   directly from the He-NLTE solvers (first-principles), with a single-shot
   escape correction (~factor-2) for the optically-thick ones. There is **no
   empirical Hα anchor** in this path.
+- **Profile display (`phase5_runner.py`)** — two corrections so the F/F_cont
+  panels are interpretable in the dense-CSM (high-τ_es) regime:
+  - **Adaptive velocity window**: the per-line window widens to the
+    emission-measure-weighted (n_e²·dV) v95 of the line-forming gas (×1.6,
+    floored at the requested ±win_kms, capped ±25000), with n_pix scaled to keep
+    resolution. A fixed ±5000 clipped broad/fast-photosphere lines and starved
+    the continuum baseline. Slow/homologous models (A1/B1) keep ±5000 unchanged.
+  - **Emergent-continuum renorm** (`_renormalize_to_emergent_continuum`): at high
+    τ_es the directly-escaping continuum is well below the un-attenuated BB, so
+    BB-normalized He lines sat at F<1 in line-free regions while the
+    emergent-normalized H/production lines sat at 1.0. Each H/He line is now
+    divided by its clean far-wing (emergent) continuum → all read 1.0
+    consistently (observer convention; L_line untouched, EW recomputed). Metals
+    are already line-centre-normalized and skipped.
 
 ## 3. Known trust ceiling (important)
 
@@ -61,6 +75,18 @@ It was validated against the SuperLite Model A1 IIP Hα (rest-peak amplitude ≈
   electron scattering to the shape; the residual ~factor-2 (nonlocal ALI) is
   still an explicit uncertainty. See `line_rt_escape.py` + FUTURE_WORK P1 #3.
 - **He II lines are ~0** in all models computed so far (no He²⁺ source): correct.
+- **Early-epoch lines are strongly BLUE-PEAKED — this is physical, not a bug.**
+  When the photosphere is fast (e.g. C1 day 10: v_phot ≈ 6700 km/s) the
+  recombination emission (∝ n_e²) forms in a thin layer at R_phot and the
+  receding hemisphere is occulted by the photospheric disk, so the emergent line
+  peaks near −v_phot with an electron-scattering red wing (the MC computes this
+  correctly). The deeper formation-layer emission Thomson-diffuses out and
+  emerges from the *same* photosphere, also blue-peaked — so it does NOT
+  symmetrise the line. (A `--spread-emission` blend that symmetrised the profile
+  was prototyped and **removed** as physically incorrect: the diffuse
+  photospheric emission distribution ∝ |v_los| is peaked at −v_phot, not flat.)
+  The blueshift recedes with epoch as the photosphere slows — a back-test
+  consistency check (`backtest/`).
 - At the interaction-brightening / continuum-collapse epochs, peak-F is inflated
   by the collapsing continuum — **quote L_line, not peak-F**.
 - **Late post-interaction / nebular epochs are not paper-ready** (continuum
@@ -93,10 +119,44 @@ It was validated against the SuperLite Model A1 IIP Hα (rest-peak amplitude ≈
   H-free composition switch, first-principles He decrement. `--he-budget` /
   auto when ⟨X_H⟩ < 1e-3.
 - `regime_diagnostics.py` — per-line grade/regime + paper-action text (now
-  reports the `EP-esc` method under `--saturated-rt`).
+  reports the `EP-esc` method under `--saturated-rt`; grade 'N' when the line's
+  element is absent, ⟨X_elem⟩ < 1e-3).
+- **Metal lines (P2 #5)** — opt-in Phase 5c for C/O/Ne (Icn / late Ibn):
+  - `metal_lines.py` — Stage-3 driver: per-line emissivity → resonance β →
+    adaptive velocity window → MC peel-off profile (shape) → EW guard. Tiered
+    strength: Cloudy → CHIANTI → provisional; `save_metal_png`. `--metal-lines`.
+    Resonance lines (C IV 1549) get a photon-conserving Sobolev **P-Cygni**
+    overlay (`pcygni_absorption_overlay`: blue trough + re-emitted continuum, net
+    EW = thermal/Cloudy). With `--metal-cloudy`, the MC shape is weighted by
+    Cloudy's per-zone emissivity (`shape_source='cloudy'`).
+  - `metal_atoms.py` — provisional atomic data + emissivity (recomb / CEL with
+    n_crit), `f_lu` resonance oscillator strengths, line colors/pretty names.
+  - `metal_ionization.py` — photoionization-equilibrium ion ladder (diluted-BB +
+    shock-brems Γ rates), self-contained.
+  - `metal_nlte.py` — **Tier-1**: authoritative CHIANTI NLTE emissivities via
+    ChiantiPy (`ion.emiss()`); needs ChiantiPy + `$XUVTOP`. Falls back silently.
+  - **Cloudy robustness (time-series consistency):** Cloudy is used for the
+    ABSOLUTE only on genuine **resonance lines** (f_lu>1e-4 → C IV 1549), where
+    its resonance-line RT is the unique contribution; intercombination/forbidden/
+    recombination lines (C III] 1909, [O III], [Ne III], …) take the **stable
+    CHIANTI** NLTE absolute, so they don't flicker on Cloudy's per-epoch thermal-
+    bistability variability. An **energy-conservation ceiling** (`L_MAX_FRAC=0.1`
+    of L_phot, in `metal_cloudy` + `metal_lines`) rejects any line that converges
+    onto the wrong branch and reports tens-of-% of L_bol → falls back to CHIANTI.
+  - `metal_cloudy.py` — **Tier-2** (`--metal-cloudy`): override metal ABSOLUTES
+    with Cloudy (self-consistent photoionization + NLTE + resonance-line RT),
+    fixing C IV 1549 / C III] 1909. Builds a deck from the STELLA state
+    (BB + shock-brems field, spherical `dlaw`, He-anchored abundances + trace-H
+    floor for the H-free C-series), runs Cloudy, parses `save line list`
+    (absolutes) + `save line emissivity` (per-zone, → MC shape weighting). MC
+    keeps the velocity SHAPE. Locate via `$CLOUDY_EXE` or
+    `~/c23.01/source/cloudy.exe`; any failure → CHIANTI/provisional per line.
+  - `validate_metals.py` — analytic harness (n_crit limits, ladder norm).
 - `photoionize_csm.py`, `stella_io.py`, `h_populations_nlte.py`,
-  `phase5_continuum.py`, `snapshot_analyzer.py` — supporting physics.
-- `make_phase5_movie.py` — standalone multi-line evolution movie from `*_lines.npz`.
+  `phase5_continuum.py`, `snapshot_analyzer.py`, `opacity.py` (He free-free,
+  P1 #4 root-fix) — supporting physics.
+- `make_phase5_movie.py` — standalone multi-line evolution movie from `*_lines.npz`
+  (`--species all/metal/he/h` filter).
 - `fix_he_strengths.py` — post-processor to re-derive He strengths from existing
   npz without an MC re-run.
 
@@ -110,6 +170,11 @@ It was validated against the SuperLite Model A1 IIP Hα (rest-peak amplitude ≈
 - `analyze_correlations.py` — master table + Pearson/Spearman + PCA.
 - `validate_p1_physics.py` — standalone analytic-limit harness for P1 #3 + #4
   (no pipeline/snapshot needed); `validate_p1_continuum.py` holds the #4 checks.
+- `backtest/run_backtest.sh` + `backtest/check_backtest.py` — sparse-grid
+  consistency harness: runs A1/A4/B4/C1/C4 at days 0.1/1/3/5/10/20/30/40/50/80/100
+  (via the `--epochs` keep-only batch filter) with the full current physics, then
+  checks continuum=1.0, H-rich vs H-free composition, and the blueshift-recedes-
+  with-epoch trend across all regimes; writes `backtest_metrics.csv`.
 - `QUICK_REFERENCE.md`, `FUTURE_WORK.md`, this file.
 
 **Data contract:** per-epoch `prod_day*_lines.npz` holds `line_names`,

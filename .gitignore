@@ -36,3 +36,21 @@ venv/
 
 # Optional: exclude local analysis results
 # input_models/model_comp/analysis/
+
+# CHIANTI atomic database (3.5 GB; not version-controlled)
+chianti/
+
+# Generated pipeline outputs (figures, tables, movies — regenerable from npz + STELLA inputs)
+input_models/**/*.png
+input_models/**/*.mp4
+input_models/**/*.csv
+input_models/**/*.txt
+input_models/**/*.profile.txt
+backtest/*.csv
+backtest/backtest_metrics.csv
+*.nbi
+*.nbc
+
+# STELLA restart files (binary, hundreds of MB — not needed by the pipeline)
+*.res
+input_models/**/res/

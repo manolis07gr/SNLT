@@ -164,13 +164,12 @@ def he1_populations_nlte(rho, T, n_e, r, v,
     n_HeII = X_HeII * n_He_total
     n_HeIII = X_HeIII * n_He_total
 
-    # Velocity gradient (forward diff with edge handling)
-    dv_dr = np.zeros_like(r)
-    dv_dr[1:-1] = (v[2:] - v[:-2]) / (r[2:] - r[:-2])
-    dv_dr[0]    = (v[1] - v[0]) / (r[1] - r[0])
-    dv_dr[-1]   = (v[-1] - v[-2]) / (r[-1] - r[-2])
-    # Add turbulent broadening floor
-    dv_dr_eff = np.maximum(np.abs(dv_dr), v_turb_cms / np.maximum(r, 1e-30))
+    # Velocity gradient — robust to DUPLICATE radii (STELLA shock zones), which
+    # make the centred difference NaN/inf and poison the He Sobolev τ.
+    from velocity_grad import robust_dvdr
+    dv_dr = robust_dvdr(v, r)
+    # Add turbulent broadening floor (per-zone v_turb/r)
+    dv_dr_eff = np.maximum(dv_dr, v_turb_cms / np.maximum(r, 1e-30))
 
     # ---- Atomic data shortcuts ----
     NLEV = he.NLEV

@@ -213,9 +213,10 @@ def _compute_sobolev_tau_h(state, n_lower, n_upper, A_ul, g_l, g_u, lam0_AA):
     v = np.asarray(getattr(state, 'v'), dtype=float)
     if r.shape != v.shape:
         raise ValueError(f"r and v shape mismatch in _compute_sobolev_tau_h")
-    dv_dr = np.gradient(v, r)
-    dv_dr = np.abs(dv_dr)
-    dv_dr = np.maximum(dv_dr, 1e-30)   # avoid /0 in stagnant zones
+    # robust to DUPLICATE radii (STELLA shock zones) → homologous fallback;
+    # a raw np.gradient(v,r) returns NaN there and poisons the Sobolev τ.
+    from velocity_grad import robust_dvdr
+    dv_dr = robust_dvdr(v, r)   # |dv/dr|, finite everywhere, floored 1e-30
 
     # σ_lam = π e² / (m_e c) × f_lu (in cm² × Hz = cm²/s)
     SIGMA0 = np.pi * EE**2 / (ME * C_LIGHT)

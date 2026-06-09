@@ -194,9 +194,10 @@ def add_he1_populations_to_state(state,
         include_M1_decay=include_M1_decay,
         verbose=verbose)
 
-    # Per-line Sobolev τ for diagnostics (cheap; we already have populations)
-    dv_dr = np.gradient(v, r)
-    dv_dr_eff = np.maximum(np.abs(dv_dr), 20e5 / np.maximum(r, 1e-30))
+    # Per-line Sobolev τ for diagnostics (cheap; we already have populations).
+    # Robust to duplicate STELLA shock radii (see velocity_grad).
+    from velocity_grad import robust_dvdr
+    dv_dr_eff = np.maximum(robust_dvdr(v, r), 20e5 / np.maximum(r, 1e-30))
     line_tau = {}
     for line in ('He_I_5876', 'He_I_6678', 'He_I_7065', 'He_I_10830'):
         line_tau[line] = nlte_he1.line_optical_depth(n_lev, line, T, dv_dr_eff)

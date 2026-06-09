@@ -73,13 +73,62 @@ opacity fix would remove the *cause*.
 
 ## P2 — New emitting species
 
-**5. Metal lines for H- and He-poor CSM interaction.**
-Add the strongest **carbon, oxygen, and neon** lines (e.g. C III/IV, O III,
-[O I], [Ne III]) expected from stripped, metal-enriched CSM interaction (Icn /
-late Ibn). *Fix:* extend the NLTE/escape machinery with C/O/Ne ions and their
-recombination + collisional channels; add them to the `line_names` schema so
-all downstream post-processing (npz, plotting, correlation analysis) picks them
-up automatically.
+**5. Metal lines for H- and He-poor CSM interaction. — DONE (Tier-1 + Tier-2).**
+Add the strongest **carbon, oxygen, and neon** lines (C IV 1549, C III] 1909,
+C III 4647, [O I] 6300, [O III] 5007, [Ne III] 3869) expected from stripped,
+metal-enriched CSM interaction (Icn / late Ibn). Implemented as opt-in Phase 5c:
+- `--metal-lines` — first-principles per-zone emissivity integrals
+  (`metal_atoms.py`: recombination + collisional CEL with the n_crit correction)
+  on photoionization-equilibrium ion densities (`metal_ionization.py`,
+  shock-X-ray-aware), transported through the **same MC peel-off kernel** as the
+  He lines (`metal_lines.mc_metal_profile` → velocity field + multiple electron
+  scattering) for realistic profiles, with an adaptive emissivity-weighted
+  velocity window and a continuum-suppression EW guard. Merged into the npz /
+  regime / plots / movies dynamically (the schema is data-driven). A dedicated
+  `{prefix}_metal_lines.png` multi-panel and a `--species metal` movie filter
+  are added.
+- **Tier-1 (`metal_nlte.py`, CHIANTI/ChiantiPy):** replaces the provisional
+  collisional emissivities with authoritative multi-level NLTE values from the
+  CHIANTI database (`ion.emiss()`), per line, when ChiantiPy + `$XUVTOP` are
+  present. Falls back to provisional otherwise.
+- **Tier-2 (`metal_cloudy.py`, Cloudy, `--metal-cloudy`):** overrides the metal
+  ABSOLUTE luminosities with **Cloudy** — a self-consistent photoionization +
+  multi-level NLTE + **resonance-line RT** solve — fixing the two approximations
+  Tier-1 leaves open (the ion balance and the resonance-line escape for
+  C IV 1549 / C III] 1909). One Cloudy run per snapshot translates the STELLA
+  state into a deck (photospheric BB + shock-bremsstrahlung incident field,
+  spherical `dlaw` density profile, He-anchored abundances with a trace-H floor
+  for the H-free C-series); the emergent `save line list` luminosities replace
+  L_line per line. The MC keeps the velocity-resolved SHAPE (Cloudy is static).
+  Strength tiering is per-line and graceful: Cloudy → CHIANTI → provisional;
+  any Cloudy failure (not installed, abort, non-convergence) silently falls back.
+  Requires Cloudy compiled and locatable via `$CLOUDY_EXE` or
+  `~/c23.01/source/cloudy.exe`. Each line carries a `data_source` tag
+  (`Cloudy-Tier2` / `CHIANTI-NLTE` / `provisional`) and the pre-override
+  `L_emiss` for audit.
+
+Two profile-physics refinements are also in (both validated on C1 day010):
+- **Item 1 — resonance-line P-Cygni.** Resonance metal lines (C IV 1549; f_lu>1e-4)
+  now get a photon-conserving Sobolev P-Cygni profile, not emission-only:
+  `metal_lines.pcygni_absorption_overlay` overlays a blue ABSORPTION trough
+  exp(−τ(Δv<0)) on the continuum and RE-EMITS the absorbed continuum
+  (∫=L_abs·P_emiss) so the net EW equals the THERMAL emission (= Cloudy's net),
+  with no double-counting and no spurious net absorption. Gated by a real
+  continuum (skipped when cont-suppressed) and the radial Sobolev τ. Forbidden /
+  intercombination lines (f_lu≈0) stay emission-only. Tagged `pcygni` per line +
+  "P-Cyg" in the PNG. (Residual: no stellar-disk occultation of the receding
+  hemisphere — a second-order SEI refinement.)
+- **Item 2 — Cloudy per-zone emissivity → MC shape.** `--metal-cloudy` now also
+  parses Cloudy's `save line emissivity` (per-zone local emissivity) and uses it
+  (interpolated onto our grid) to weight the MC profile, so the line's formation
+  region is consistent with Cloudy's self-consistent ionization rather than the
+  cruder Tier-1 ladder. Tagged `shape_source='cloudy'`.
+
+*Remaining:* the C III 4647 recombination line has no default Cloudy line-list
+label matched yet (stays Tier-1/provisional); time-dependent (non-equilibrium)
+ionization and CSM clumping/filling-factor are not modelled (Cloudy is
+steady-state, smooth); lines are transported independently (no blending). Absolute
+He-regime continuum normalization (P1) bounds the EW reliability for thick UV lines.
 
 **6. Forbidden / nebular-phase lines.**
 The late, optically-thin (τ_es ≲ 0.3) epochs are nebular, where neither the

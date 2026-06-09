@@ -51,6 +51,8 @@ epochs.
 |------|------|--------------|
 | `--saturated-rt` | P1 #3 | For optically-thick He lines (τ_med ≥ 1): drops the empirical Hα-anchored `R_flat` and keeps the bare single-shot β escape luminosity (= first-principles escape-probability value), and applies multiple-electron-scattering to the profile SHAPE (`He-NLTE(thick,EP-esc)` mode). Strengths only; the gate still owns the shape. |
 | `--he-budget` | P1 #4 | Composition-general continuum-collapse guard: floors a Wien-collapsed `L_cont_band` to the energy-conserving color temperature, plus an energy-conservation check and a first-principles He decrement (He I 10830 reference). **AUTO-enabled when ⟨X_H⟩ < 1e-3** (H-free), so C-series runs get it without the flag. |
+| `--metal-lines` | P2 #5 | Phase 5c: add C/O/Ne lines (C IV 1549, C III] 1909, C III 4647, [O I] 6300, [O III] 5007, [Ne III] 3869). First-principles emissivity integrals on photoionization-equilibrium ion densities, transported through the He MC peel-off kernel for realistic profiles; merged into npz/regime/plots/movies dynamically; writes `{prefix}_metal_lines.png`. Emissivities use **CHIANTI NLTE (Tier-1)** when ChiantiPy + `$XUVTOP` are present, else provisional. Most useful for the stripped/Icn C-series. |
+| `--metal-cloudy` | P2 #5 Tier-2 | Override the metal ABSOLUTE luminosities with **Cloudy** (self-consistent photoionization + NLTE + **resonance-line RT**), fixing the C IV 1549 / C III] 1909 resonance absolutes and the ion balance. One Cloudy run per snapshot; the MC keeps the velocity SHAPE. Per-line graceful fallback Cloudy→CHIANTI→provisional. **Implies `--metal-lines`.** Requires Cloudy compiled and locatable via `$CLOUDY_EXE` or `~/c23.01/source/cloudy.exe`. |
 | `--keep-shared-snapshots` | P0 #1 | Disables the default skip of late-epoch snapshots that are byte-identical to a sibling model dir (the shared-placeholder artifact). |
 
 Without these flags, every output is byte-identical to the pre-P1 pipeline
@@ -63,6 +65,14 @@ python production_runner.py --batch \
        --line-profile-method formal \
        --he-lines --he1-nlte --he2-nlte \
        --saturated-rt --he-budget
+
+# Example: stripped/Icn C-series snapshot with metal lines + Cloudy Tier-2
+#   (set XUVTOP for CHIANTI Tier-1; CLOUDY_EXE if Cloudy is not at the default path)
+XUVTOP=~/Documents/SNLT/chianti CLOUDY_EXE=~/c23.01/source/cloudy.exe \
+python production_runner.py mesa.day010_post_Lbol_max.data --format stella \
+       --he-lines --he1-nlte --he2-nlte \
+       --metal-lines --metal-cloudy \
+       --out-prefix c1_day010
 ```
 
 ---

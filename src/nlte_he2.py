@@ -196,9 +196,11 @@ def he2_populations_nlte(rho, T, n_e, r, v,
     for i in range(NLEV):
         n_i[i] = n_i[i] * n_HeII / np.maximum(partition, 1.0e-30)
 
-    # ---- Step 3: velocity gradient for Sobolev ----
-    dv_dr = np.gradient(v, r)
-    dv_dr_eff = np.maximum(np.abs(dv_dr), v_turb_cms / np.maximum(r, 1.0e-30))
+    # ---- Step 3: velocity gradient for Sobolev (robust to duplicate STELLA
+    #      shock radii — see velocity_grad) ----
+    from velocity_grad import robust_dvdr
+    dv_dr = robust_dvdr(v, r)
+    dv_dr_eff = np.maximum(dv_dr, v_turb_cms / np.maximum(r, 1.0e-30))
 
     # ---- Step 4: iteration loop ----
     transitions = he2.TRANSITIONS

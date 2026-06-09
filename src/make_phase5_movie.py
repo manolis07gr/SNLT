@@ -90,6 +90,10 @@ def main(argv=None):
     p.add_argument('pattern', help="glob for per-epoch npz, e.g. 'prod_*_lines.npz'")
     p.add_argument('--out', default='batch_lines_evolution.mp4')
     p.add_argument('--fps', type=int, default=3)
+    p.add_argument('--species', default='all',
+                   choices=['all', 'metal', 'he', 'h'],
+                   help="which lines to animate: 'all' (default), 'metal' "
+                        "(C/O/Ne — P2 #5), 'he', or 'h'.")
     args = p.parse_args(argv)
 
     files = sorted(glob.glob(args.pattern), key=_epoch_from_name)
@@ -101,6 +105,24 @@ def main(argv=None):
 
     # panel line order
     present = list(frames[0][1].keys())
+
+    # optional species filter (P2 #5: metal-only movie, etc.)
+    def _is_metal(n):
+        return n.startswith(('C_', 'O_', 'Ne_')) and not n.startswith('He_')
+
+    def _is_he(n):
+        return n.startswith('He_')
+
+    def _is_h(n):
+        return n.startswith(('Halpha', 'Hbeta', 'Hgamma', 'Hdelta',
+                             'Palpha', 'Pbeta', 'Pgamma'))
+    if args.species != 'all':
+        sel = {'metal': _is_metal, 'he': _is_he, 'h': _is_h}[args.species]
+        present = [n for n in present if sel(n)]
+        if not present:
+            print(f"[phase5-movie] no '{args.species}' lines found in files")
+            return
+
     order = [n for n in _PREFERRED if n in present] + \
             [n for n in present if n not in _PREFERRED]
     nlines = len(order)

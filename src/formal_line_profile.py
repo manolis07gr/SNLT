@@ -186,8 +186,11 @@ def sobolev_validity(r, v, max_homology_spread=0.5, max_reversal_frac=0.10):
     r = np.asarray(r, float); v = np.asarray(v, float)
     t = r / np.maximum(v, 1e-30)
     homology_spread = float(np.std(t) / max(np.median(t), 1e-30))
-    dvdr = np.gradient(v, r)
-    reversal_frac = float(np.mean(dvdr < 0))
+    with np.errstate(divide='ignore', invalid='ignore'):
+        dvdr = np.gradient(v, r)
+    # a non-finite gradient marks a DUPLICATE-radius zone = a STELLA shock front,
+    # which IS a velocity reversal — count it as one (not as 'not reversed').
+    reversal_frac = float(np.mean((dvdr < 0) | ~np.isfinite(dvdr)))
     valid = (homology_spread <= max_homology_spread) and \
             (reversal_frac <= max_reversal_frac)
     reason = ('homologous (Sobolev valid)' if valid else

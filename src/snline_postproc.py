@@ -50,6 +50,10 @@ BALMER = ["Halpha", "Hbeta", "Hgamma"]            # fixed, canonical trio
 PASCHEN = ["Palpha", "Pbeta"]
 HE_I = ["He_I_5876", "He_I_6678", "He_I_7065", "He_I_10830"]
 HE_II = ["He_II_1640", "He_II_3203", "He_II_4686", "He_II_10124"]
+# P2 #5 metal lines (C/O/Ne). Present only when run with --metal-lines; all
+# post-processing reads line_names dynamically, so these are for grouping/colour.
+METAL = ["C_IV_1549", "C_III_1909", "C_III_4647",
+         "O_I_6300", "O_III_5007", "Ne_III_3869"]
 
 # Pretty labels for axes / legends
 PRETTY = {
@@ -59,6 +63,9 @@ PRETTY = {
     "He_I_7065": "He I 7065", "He_I_10830": "He I 10830",
     "He_II_1640": "He II 1640", "He_II_3203": "He II 3203",
     "He_II_4686": "He II 4686", "He_II_10124": "He II 10124",
+    "C_IV_1549": "C IV 1549", "C_III_1909": "C III] 1909",
+    "C_III_4647": "C III 4647", "O_I_6300": "[O I] 6300",
+    "O_III_5007": "[O III] 5007", "Ne_III_3869": "[Ne III] 3869",
 }
 
 # A consistent, color-blind-friendly palette keyed by line
@@ -69,6 +76,10 @@ LINE_COLOR = {
     "He_I_7065": "#17becf", "He_I_10830": "#bcbd22",
     "He_II_4686": "#7f7f7f", "He_II_1640": "#555555",
     "He_II_3203": "#999999", "He_II_10124": "#aaaaaa",
+    # metals: brown=C, blue=O, purple=Ne
+    "C_IV_1549": "#8c564b", "C_III_1909": "#a0522d", "C_III_4647": "#654321",
+    "O_I_6300": "#1f77b4", "O_III_5007": "#2a9df4",
+    "Ne_III_3869": "#9467bd",
 }
 
 

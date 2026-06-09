@@ -47,6 +47,8 @@ def run_phase5_for_state(state, snap, n_packets: int = 50000,
                           lock: bool = False,
                           saturated_rt: bool = False,
                           he_budget: bool = False,
+                          metal_lines: bool = False,
+                          metal_cloudy: bool = False,
                           verbose: bool = True) -> dict:
     """Run Phase 5 (multi-line MC) on a state populated by Phases 3 + 4.
 
@@ -78,6 +80,43 @@ def run_phase5_for_state(state, snap, n_packets: int = 50000,
     # Build the merged state expected by Phase 5
     merged = _build_merged_state(state, snap)
     _validate_state_for_phase5(merged)
+
+    # Adaptive velocity window: a FIXED ±win_kms clips broad, blueshifted
+    # dense-CSM lines (v_max can far exceed 5000 km/s) AND starves the F/F_cont
+    # baseline — the far-wing mean used to normalise the profile then falls
+    # INSIDE the line, pinning the apparent continuum well below 1. Widen to the
+    # emission-measure-weighted (n_e^2·dV) 95th-percentile velocity of the
+    # line-forming gas (× a margin), so the window captures the full line plus a
+    # genuine continuum shoulder. Never NARROWER than the requested win_kms, so
+    # slow/homologous models (A1/B1-like) are unchanged; capped for sanity.
+    try:
+        _v = np.abs(np.asarray(merged.v, float)) / 1e5
+        _ne = np.asarray(merged.n_e, float)
+        _r = np.asarray(merged.r, float)
+        _edge = np.empty(_r.size + 1)
+        _edge[1:-1] = 0.5 * (_r[:-1] + _r[1:])
+        _edge[0] = _r[0]; _edge[-1] = _r[-1] + (_r[-1] - _r[-2])
+        _dV = (4.0 / 3.0) * np.pi * (_edge[1:] ** 3 - _edge[:-1] ** 3)
+        _w = _ne ** 2 * _dV
+        _w = np.where(np.isfinite(_w) & (_w > 0), _w, 0.0)
+        if _w.sum() > 0 and _v.size > 1:
+            _o = np.argsort(_v)
+            _cv = np.cumsum(_w[_o]); _cv = _cv / _cv[-1]
+            _v95 = float(_v[_o][min(int(np.searchsorted(_cv, 0.95)), _v.size - 1)])
+            win_kms_eff = float(np.clip(1.6 * _v95, win_kms, 25000.0))
+        else:
+            win_kms_eff = win_kms
+    except Exception:
+        win_kms_eff = win_kms
+    # keep the spectral resolution (~km/s per pixel) roughly constant as the
+    # window widens, capped for performance.
+    if win_kms_eff > win_kms + 1.0 and win_kms > 0:
+        n_pix = int(np.clip(round(n_pix * win_kms_eff / win_kms), n_pix, 1201))
+    if verbose and win_kms_eff > win_kms + 1.0:
+        print(f"[phase5] adaptive velocity window ±{win_kms_eff:.0f} km/s "
+              f"(emission-measure v95-driven; requested ±{win_kms:.0f}), n_pix={n_pix} "
+              f"— captures the full broad/blueshifted line + a continuum shoulder.")
+    win_kms = win_kms_eff
 
     # Sobolev-validity gate: the per-line formal source-function solution applies
     # only to homologous ejecta (IIP-like). For a dense, non-homologous CSM
@@ -162,6 +201,48 @@ def run_phase5_for_state(state, snap, n_packets: int = 50000,
         if verbose:
             print(f"[phase5b/compgen] guard skipped: {_cg_exc}")
 
+    # ---- Continuum renormalization to the EMERGENT continuum (observer
+    #      convention). At high τ_es the directly-escaping continuum is well
+    #      below the un-attenuated BB, so BB-normalized He profiles sit at F<1
+    #      in line-free regions (while the emergent-normalized H/production lines
+    #      sit at 1.0) — an inconsistent baseline that reads as a spurious
+    #      sub-continuum "deficit". Divide each H/He line by its clean far-wing
+    #      median (now reliably continuum thanks to the adaptive window) so every
+    #      line's continuum reads 1.0. L_line is untouched; the profile EW is
+    #      recomputed relative to the emergent continuum.
+    _renormalize_to_emergent_continuum(spectra, verbose=verbose)
+
+    # ---- Phase 5c (P2 #5): C/O/Ne metal lines (opt-in --metal-lines) ----
+    # First-principles emissivity integrals (recombination + collisional, with
+    # the n_crit correction) on photoionization-equilibrium ion densities. The
+    # metal lines are merged into the spectra dict so the npz/regime/plots/movies
+    # pick them up dynamically. Atomic data is PROVISIONAL (verify vs CHIANTI).
+    if metal_lines:
+        try:
+            import metal_lines as _ml
+            metal_spectra, _metal_ions = _ml.compute_metal_lines(
+                merged, snap=snap, use_cloudy=metal_cloudy, verbose=verbose)
+            for _name, _sp in metal_spectra.items():
+                spectra[_name] = _sp
+            if metal_spectra and out_prefix is not None and make_png:
+                try:
+                    _ml.save_metal_png(
+                        spectra, f"{out_prefix}_metal_lines.png",
+                        epoch_d=(snap.get('epoch_d') if isinstance(snap, dict)
+                                 else None),
+                        T_phot=getattr(merged, 'T_phot', None),
+                        R_phot=getattr(merged, 'R_phot_cm', None))
+                except Exception as _mp:
+                    print(f"[phase5c] metal PNG render failed: {_mp}")
+            if verbose and metal_spectra:
+                print(f"[phase5c] merged {len(metal_spectra)} metal lines "
+                      f"(C/O/Ne) into the output"
+                      + (f"; wrote {out_prefix}_metal_lines.png"
+                         if (out_prefix and make_png) else "") + ".")
+        except Exception as _ml_exc:
+            if verbose:
+                print(f"[phase5c] metal lines skipped: {_ml_exc}")
+
     # Save outputs if requested
     if out_prefix is not None:
         _save_phase5_npz(spectra, f"{out_prefix}_lines.npz")
@@ -180,6 +261,72 @@ def run_phase5_for_state(state, snap, n_packets: int = 50000,
             print(f"[phase5] Saved {out_prefix}_lines.npz, .txt"
                   + (", .png" if make_png else ""))
 
+    return spectra
+
+
+# ============================================================================
+# Continuum renormalization (emergent-continuum / observer convention)
+# ============================================================================
+
+def _renormalize_to_emergent_continuum(spectra, frac=0.82, verbose=True):
+    """Rescale each H/He line's F_norm / F_norm_corrected so its line-free
+    far-wing continuum reads 1.0 (observer convention).
+
+    At high \u03c4_es the He lines (normalized to the un-attenuated diluted-BB) sit at
+    F<1 in continuum regions while the emergent-normalized H/production lines sit
+    at 1.0 \u2014 an inconsistent, misleading baseline. We estimate the emergent
+    continuum from the median of |\u0394v| > frac\u00b7window (now reliably continuum given
+    the adaptive window) and divide it out. The shape is unchanged; L_line is NOT
+    touched; the profile-EW (sp['EW']/'EW_corrected') is recomputed relative to
+    the corrected continuum so it matches the displayed F/F_cont. Metal lines
+    (already line-centre-normalized to 1.0) are skipped. Skips a line whose
+    far-wing is too contaminated (continuum estimate not finite/positive, or the
+    line fills the window).
+    """
+    _C = 2.99792458e5
+    _trz = getattr(np, 'trapezoid', None) or getattr(np, 'trapz')
+    n_fixed = 0
+    for ln, sp in spectra.items():
+        # skip metals (line-centre normalized, already continuum=1) and anything
+        # without a profile.
+        if str(sp.get('strength_mode', '')).startswith('metal'):
+            continue
+        if 'F_norm' not in sp or 'lambda_AA' not in sp:
+            continue
+        lam = np.asarray(sp['lambda_AA'], float)
+        lam0 = float(sp.get('lambda_rest', lam[len(lam) // 2]))
+        if lam.size < 5 or not (lam0 > 0):
+            continue
+        dv = (lam / lam0 - 1.0) * _C
+        win = max(abs(float(dv.min())), abs(float(dv.max())))
+        if win <= 0:
+            continue
+        fw = np.abs(dv) > frac * win
+        if fw.sum() < 3:
+            continue
+        Fref = np.asarray(sp.get('F_norm_corrected', sp['F_norm']), float)
+        cont = float(np.median(Fref[fw]))
+        if not (np.isfinite(cont) and cont > 0):
+            continue
+        # guard: if the "continuum" is itself a large departure from the line
+        # peak (i.e. the window is line-filled and the far wing is not real
+        # continuum), skip rather than mis-scale.
+        if abs(cont - 1.0) < 1e-3:
+            continue
+        for key in ('F_norm', 'F_norm_corrected'):
+            if key in sp:
+                sp[key] = np.asarray(sp[key], float) / cont
+        # recompute profile EW relative to the now-unit continuum
+        Fc = np.asarray(sp.get('F_norm_corrected', sp['F_norm']), float)
+        ew = float(-_trz(Fc - 1.0, lam))
+        if 'EW_corrected' in sp:
+            sp['EW_corrected'] = ew
+        sp['EW'] = ew
+        sp['cont_renorm'] = cont           # the emergent/BB continuum ratio applied
+        n_fixed += 1
+    if verbose and n_fixed:
+        print(f"[phase5] continuum renormalized to the emergent continuum for "
+              f"{n_fixed} H/He lines (far-wing \u2192 1.0; observer convention).")
     return spectra
 
 
@@ -498,6 +645,39 @@ def _build_merged_state(state, snap) -> types.SimpleNamespace:
         elif hasattr(state, key):
             setattr(merged, key, np.asarray(getattr(state, key), float))
 
+    # Metal composition dict + shock-X-ray params (P2 #5: metal lines). The
+    # composition dict is truncated zone-consistently with the hydro by
+    # stella_io.truncate_to_photosphere.
+    if isinstance(snap, dict):
+        comp = snap.get('composition')
+        if isinstance(comp, dict):
+            merged.composition = comp
+        if 'T_shock' in snap:
+            merged.T_shock = snap['T_shock']
+        if 'L_X_brems' in snap:
+            # Apply the SAME interior-shock gate that photoionize_csm uses for the
+            # H/He field: a shock buried INSIDE R_phot has its hard X-rays
+            # reprocessed/thermalized by the overlying optically-thick gas and they
+            # do NOT escape to ionize the line-forming CSM. Without this the metal
+            # high-ion lines ([O III], C IV, [Ne III]) flicker epoch-to-epoch on the
+            # (sometimes spuriously huge) buried-shock L_X — the ion balance flips
+            # O²⁺↔O³⁺ between adjacent snapshots. Also cap the escaping X-rays at
+            # L_phot (energy conservation — the ionizing flux can't exceed L_bol).
+            _pip = snap.get('photoionization_params') or {}
+            _lx = float(snap['L_X_brems'])
+            if not bool(_pip.get('include_shock_xray', True)):
+                _lx = 0.0
+            _lp = float(getattr(merged, 'L_phot', 0.0) or 0.0)
+            if _lp <= 0:
+                _Rp = float(getattr(merged, 'R_phot_cm',
+                                    getattr(merged, 'R_phot', 0.0)) or 0.0)
+                _Tp = float(getattr(merged, 'T_phot', 0.0) or 0.0)
+                if _Rp > 0 and _Tp > 0:
+                    _lp = 4.0 * np.pi * _Rp ** 2 * 5.670374419e-5 * _Tp ** 4
+            if _lp > 0 and _lx > _lp:
+                _lx = _lp
+            merged.L_X_brems = _lx
+
     return merged
 
 
@@ -580,9 +760,12 @@ def _save_phase5_txt(spectra: dict, path: str, state, snap,
              getattr(state, 'T_phot', None) or getattr(state, 'T_color', None)
     C = 2.998e5
 
-    # Group lines by species
-    by_species = {'HI': [], 'HeI': [], 'HeII': []}
+    # Group lines by species (metals routed to their own section — P2 #5)
+    by_species = {'HI': [], 'HeI': [], 'HeII': [], 'metal': []}
     for name in spectra:
+        if name.startswith(('C_', 'O_', 'Ne_')) and not name.startswith('He_'):
+            by_species['metal'].append(name)
+            continue
         sp = by_species.get(p5._species_of(name))
         if sp is not None:
             sp.append(name)
@@ -642,7 +825,9 @@ def _save_phase5_txt(spectra: dict, path: str, state, snap,
         for species_label, header_comment in [
                 ('HI',   '# --- H I (Balmer + Paschen) ---'),
                 ('HeI',  '# --- He I ---'),
-                ('HeII', '# --- He II ---')]:
+                ('HeII', '# --- He II ---'),
+                ('metal', '# --- Metal lines C/O/Ne (PROVISIONAL atomic data; '
+                          'quote L_line, verify vs CHIANTI) ---')]:
             if not by_species[species_label]:
                 continue
             f.write(f"{header_comment}\n")
@@ -735,7 +920,24 @@ def _save_phase5_png(spectra: dict, path: str, state, snap,
                           fontsize=9)
             ax.set_xlabel('Δv [km/s]', fontsize=9)
             ax.set_ylabel('F / F$_{cont}$', fontsize=9)
-            ax.set_xlim(-5000, 5000)
+            # x-range follows the DATA: auto-detect the line extent (where the
+            # profile departs from the unit continuum) + 25% margin, falling back
+            # to the full window. The fixed ±5000 used to CLIP the now-adaptive
+            # wide windows (lines reaching ±10000+).
+            try:
+                _exc = np.abs(np.asarray(Fn_corr, float) - 1.0)
+                _pk = float(np.nanmax(_exc)) if _exc.size else 0.0
+                _m = _exc > max(0.05 * _pk, 0.02)
+                if _pk > 0.05 and _m.sum() >= 5:
+                    _lo = float(dv[_m][0]); _hi = float(dv[_m][-1])
+                    _w = max(_hi - _lo, 1.0)
+                    _lo -= 0.25 * _w; _hi += 0.25 * _w
+                    ax.set_xlim(max(_lo, float(dv.min())),
+                                min(_hi, float(dv.max())))
+                else:
+                    ax.set_xlim(float(dv.min()), float(dv.max()))
+            except Exception:
+                ax.set_xlim(float(dv.min()), float(dv.max()))
             ax.grid(alpha=0.3)
             if ln == 'Halpha' and has_corr:
                 ax.legend(loc='upper right', fontsize=7, framealpha=0.7)

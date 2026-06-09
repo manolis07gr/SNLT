@@ -699,6 +699,8 @@ def process_snapshot(snap_path, n_per=100_000, n_chunks=2,
                       he_lines_use_existing_kernel=True,
                       saturated_rt=False,
                       he_budget=False,
+                      metal_lines=False,
+                      metal_cloudy=False,
                       verbose=True):
     """Full processing for one snapshot. Returns result dict.
 
@@ -1363,6 +1365,15 @@ def process_snapshot(snap_path, n_per=100_000, n_chunks=2,
             if 'v_turb_kms_grid' in params:
                 snap_for_phase5.setdefault('v_turb_kms_grid',
                                             np.asarray(params['v_turb_kms_grid']))
+            # Stash shock X-ray params for metal-line photoionization (P2 #5)
+            _piP = snap.get('photoionization_params')
+            if isinstance(_piP, dict):
+                _spp = _piP.get('shock_params')
+                if isinstance(_spp, dict):
+                    snap_for_phase5.setdefault('L_X_brems',
+                                               float(_spp.get('L_X_brems', 0.0)))
+                    snap_for_phase5.setdefault('T_shock',
+                                               float(_spp.get('T_shock', 0.0)))
             print(f"\n[phase5] Computing He multi-line profiles "
                   f"({he_lines_n_packets:,} packets/line)")
             # Build production-Hα cross-check info from the just-finished MC.
@@ -1433,6 +1444,8 @@ def process_snapshot(snap_path, n_per=100_000, n_chunks=2,
                 lock=line_profile_lock,
                 saturated_rt=saturated_rt,
                 he_budget=he_budget,
+                metal_lines=metal_lines,
+                metal_cloudy=metal_cloudy,
                 verbose=True)
             result['he_spectra_summary'] = {
                 ln: {'L_line': float(sp['L_line']),
@@ -2355,6 +2368,8 @@ def process_batch(snap_paths, args):
                 he_lines_use_existing_kernel=not args.he_lines_reference_mc,
                 saturated_rt=args.saturated_rt,
                 he_budget=args.he_budget,
+                metal_lines=args.metal_lines,
+                metal_cloudy=args.metal_cloudy,
                 verbose=True,
             )
             results.append(r)
@@ -2796,6 +2811,13 @@ def main():
     parser.add_argument('snap', nargs='?', help='snapshot file (single mode)')
     parser.add_argument('--batch', action='store_true',
                         help='batch process all atmosphere_*.dat in current dir')
+    parser.add_argument('--epochs', type=str, default='',
+                        help='comma-separated list of epoch days to run ONLY (keep-'
+                             'only filter for --batch), e.g. '
+                             '"0.1,1,3,5,10,20,30,40,50,80,100" for a sparse '
+                             'back-test grid. Each requested day is matched to the '
+                             'snapshot with that epoch (tolerance 1e-4); missing days '
+                             'are warned. Applied before --skip-epochs.')
     parser.add_argument('--skip-epochs', type=str, default='',
                         help='comma-separated list of epoch values to skip in '
                              '--batch mode, e.g. "0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9". '
@@ -3131,6 +3153,27 @@ def main():
                              'kernel. Faster and self-contained for debugging, '
                              'but produces emission-only profiles (no P-Cygni '
                              'absorption).')
+    parser.add_argument('--metal-lines', action='store_true',
+                        help='Phase 5c (P2 #5): add C/O/Ne metal lines (C IV 1549, '
+                             'C III] 1909, C III 4647, [O I] 6300, [O III] 5007, '
+                             '[Ne III] 3869) via first-principles emissivity '
+                             'integrals (recombination + collisional CEL with the '
+                             'n_crit correction) on photoionization-equilibrium '
+                             'ion densities. Lines are merged into the npz/regime/'
+                             'plots/movies dynamically. ATOMIC DATA IS PROVISIONAL '
+                             '(verify vs CHIANTI/Cloudy before quoting absolute '
+                             'fluxes). Most useful for the stripped/Icn (C-series).')
+    parser.add_argument('--metal-cloudy', action='store_true',
+                        help='Phase 5c Tier-2 (P2 #5): override the metal-line '
+                             'ABSOLUTE luminosities with Cloudy (self-consistent '
+                             'photoionization + multi-level NLTE + resonance-line '
+                             'RT), fixing the C IV 1549 / C III] 1909 resonance '
+                             'absolutes and the ionization. The MC profile SHAPE is '
+                             'retained (Cloudy is static). Requires Cloudy compiled '
+                             'and locatable ($CLOUDY_EXE or ~/c23.01/source/'
+                             'cloudy.exe); falls back to CHIANTI/provisional per '
+                             'line if Cloudy is absent or a run does not converge. '
+                             'Implies --metal-lines.')
     parser.add_argument('--he-budget', action='store_true',
                         help='Phase 5b (P1 #4): composition-general continuum '
                              'guard + He-budget diagnostics. Detects the '
@@ -3162,6 +3205,10 @@ def main():
                         help='Frames per second for the Phase 5 movie '
                              '(default 3). 30 epochs at 3 fps → 10 s movie.')
     args = parser.parse_args()
+
+    # --metal-cloudy is a strength upgrade ON the metal lines → it implies them.
+    if getattr(args, 'metal_cloudy', False) and not args.metal_lines:
+        args.metal_lines = True
 
     if args.batch:
         # Find candidate files for each format
@@ -3199,6 +3246,33 @@ def main():
         if not snap_paths:
             print(f"No {fmt_batch.upper()} snapshots found in current directory")
             sys.exit(1)
+
+        # Apply --epochs KEEP-ONLY filter (if given): run ONLY the listed epoch
+        # days (e.g. for a sparse back-test grid). Matches each requested day to
+        # the nearest available snapshot within 1e-4.
+        keep_str = (getattr(args, 'epochs', None) or '').strip()
+        if keep_str:
+            try:
+                keep_set = [float(x.strip()) for x in keep_str.split(',') if x.strip()]
+            except ValueError as e:
+                print(f"[batch] --epochs parse error: {e}")
+                sys.exit(1)
+            n_before = len(snap_paths)
+            kept = []
+            for p in snap_paths:
+                epoch_val = (stella_epoch(p) if fmt_batch == 'stella'
+                             else float(heracles_num(p)))
+                if any(abs(epoch_val - s) < 1e-4 for s in keep_set):
+                    kept.append(p)
+            missing = [s for s in keep_set
+                       if not any(abs((stella_epoch(p) if fmt_batch == 'stella'
+                                       else float(heracles_num(p))) - s) < 1e-4
+                                  for p in snap_paths)]
+            snap_paths = kept
+            print(f"[batch] --epochs: kept {len(snap_paths)}/{n_before} snapshots "
+                  f"(requested {len(keep_set)} epochs)")
+            if missing:
+                print(f"[batch] --epochs WARNING: no snapshot for days {missing}")
 
         # Apply --skip-epochs filter (if given) before processing
         skip_str = (args.skip_epochs or '').strip()
@@ -3304,6 +3378,8 @@ def main():
             he_lines_use_existing_kernel=not args.he_lines_reference_mc,
             saturated_rt=args.saturated_rt,
             he_budget=args.he_budget,
+            metal_lines=args.metal_lines,
+            metal_cloudy=args.metal_cloudy,
             verbose=True,
         )
 
