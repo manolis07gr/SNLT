@@ -2443,10 +2443,23 @@ def process_batch(snap_paths, args):
                 movie_out = getattr(args, 'phase5_movie_out',
                                       'batch_lines_evolution.mp4')
                 fps = getattr(args, 'phase5_movie_fps', 3)
-                print(f"\n[phase5] Building multi-line evolution movie "
-                      f"({len(npz_files)} frames → {movie_out} at {fps} fps)...")
                 from make_phase5_movie import main as movie_main
-                movie_main([pattern, '--out', movie_out, '--fps', str(fps)])
+                # Always animate ALL lines; ALSO emit species-specific movies so
+                # the C/O/Ne metal evolution (and the He evolution) each get their
+                # own clip instead of being buried among the 19 H/He/metal panels.
+                # The metal movie is produced whenever metal lines were computed.
+                _movies = [('all', movie_out)]
+                if getattr(args, 'metal_lines', False):
+                    _movies.append(('metal', 'batch_metal_evolution.mp4'))
+                    _movies.append(('he', 'batch_he_evolution.mp4'))
+                for _sp, _out in _movies:
+                    try:
+                        print(f"\n[phase5] Building {_sp}-line evolution movie "
+                              f"({len(npz_files)} frames → {_out} at {fps} fps)...")
+                        movie_main([pattern, '--out', _out, '--fps', str(fps),
+                                    '--species', _sp])
+                    except Exception as _me:
+                        print(f"[phase5] WARNING: {_sp} movie failed: {_me}")
             else:
                 print(f"\n[phase5] No Phase 5 NPZ files found; skipping movie.")
         except Exception as e:
