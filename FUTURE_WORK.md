@@ -146,11 +146,28 @@ Two profile-physics refinements are also in (both validated on C1 day010):
   region is consistent with Cloudy's self-consistent ionization rather than the
   cruder Tier-1 ladder. Tagged `shape_source='cloudy'`.
 
-*Remaining:* the C III 4647 recombination line has no default Cloudy line-list
-label matched yet (stays Tier-1/provisional); time-dependent (non-equilibrium)
-ionization and CSM clumping/filling-factor are not modelled (Cloudy is
-steady-state, smooth); lines are transported independently (no blending). Absolute
-He-regime continuum normalization (P1) bounds the EW reliability for thick UV lines.
+*C III λ4650 recombination ORL — physics corrected (one residual: the branching
+normalization).* Cloudy's default C III model atom emits ~0 for this optical
+recombination line (ORLs need dedicated effective-recombination data not in the
+light-element model atoms), so it stays on the metal_atoms recombination channel.
+That channel was fixed to be physically correct: (a) the line now scales with the
+RECOMBINING PARENT ion n(C³⁺)='C_IV' (it is emitted by C²⁺ but populated by C³⁺
+recombination; the ³P° upper level is spin-forbidden from the ¹S ground so
+collisional excitation is negligible) — previously it wrongly used n(C²⁺); (b) the
+effective coefficient is now `branch · α_tot(C³⁺→C²⁺, T)` (Badnell-form total ×
+multiplet branching), which bounds it physically and carries the real
+recombination T-dependence. *Residual:* the multiplet branching is a literature-
+informed estimate (≈0.02, PPB91-consistent, ~factor-2); drop the exact
+Pequignot+1991 V1 effective coefficient into `METAL_LINES['C_III_4647']` to remove
+it. A per-line **boxy-width validation** (profile HWHM vs the emission-weighted
+shell velocity; stored in the npz + printed) now flags any artificially
+narrow/broad metal profile — all C4 lines pass (ratio ~0.6-0.8, boxy-shoulder).
+
+*Other remaining:* time-dependent (non-equilibrium) ionization and CSM
+clumping/filling-factor are not modelled (Cloudy is steady-state, smooth); lines
+are transported independently (no blending); spherical CSM (no torus/disk
+asymmetry or dust blueshift). Absolute He-regime continuum normalization (P1)
+bounds the EW reliability for thick UV lines.
 
 **5b. Cloudy intermittency → C IV resonance-line flicker — ROOT-CAUSED + FIXED.**
 The back-test surfaced an apparent C IV 1549 "spike" at C4 day5 (5.7e40 between

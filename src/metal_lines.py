@@ -204,6 +204,30 @@ def _weighted_vquantile(vabs_kms, w, q=0.95):
     return float(vv[idx])
 
 
+def _profile_hwhm_kms(lam_grid, P, lam0):
+    """Half-width at half-maximum of an emission profile P(λ) [km/s], averaged
+    over the two sides. Used by the boxy-width VALIDATION (#2): a shell-formed
+    (flat-topped) line has HWHM comparable to the emitting-shell velocity (the
+    half-max sits near the flat-top edge ≈ ±v_shell), modestly broadened by
+    electron scattering. Returns nan if there is no clear peak."""
+    P = np.asarray(P, float); lam = np.asarray(lam_grid, float)
+    if P.size < 5 or not np.any(np.isfinite(P)):
+        return float('nan')
+    pk = float(np.nanmax(P))
+    if not (pk > 0):
+        return float('nan')
+    half = 0.5 * pk
+    dv = (lam / float(lam0) - 1.0) * C_KMS
+    imax = int(np.nanargmax(P))
+    li = imax
+    while li > 0 and P[li] > half:
+        li -= 1
+    ri = imax
+    while ri < P.size - 1 and P[ri] > half:
+        ri += 1
+    return float(0.5 * (abs(dv[li]) + abs(dv[ri])))
+
+
 _H_PL = 6.62607015e-27
 _C_CGS = 2.99792458e10
 
@@ -415,8 +439,13 @@ def compute_metal_lines(state, snap=None, win_kms: float = 5000.0,
     spectra = {}
     rows = []
     for name, d in ma.METAL_LINES.items():
-        n_ion = ions.get(d['ion'])
-        if n_ion is None:
+        # Recombination lines scale with the RECOMBINING (parent) ion density —
+        # the stage above the emitter (e.g. C III λ4650 ← C³⁺='C_IV'). CEL and
+        # resonance lines use their own ion. The CHIANTI/collisional path below
+        # always wants the emitter ion, so keep that separate.
+        n_ion_emit = ions.get(d['ion'])
+        n_ion = ions.get(d.get('recomb_parent', d['ion']))
+        if n_ion is None or n_ion_emit is None:
             continue
         lam0 = float(d['lam_AA'])
         # emissivity: CHIANTI NLTE (authoritative) when available + line is
@@ -425,9 +454,12 @@ def compute_metal_lines(state, snap=None, win_kms: float = 5000.0,
         if use_chianti and name in mnlte.CHIANTI_LINES:
             emiss_pi, _ntr = mnlte.line_emissivity_per_ion(name, T, n_e)
         if emiss_pi is not None:
-            j = 4.0 * np.pi * np.asarray(emiss_pi, float) * np.asarray(n_ion, float)
+            # CHIANTI is a per-EMITTER-ion NLTE emissivity → use the emitter density
+            j = 4.0 * np.pi * np.asarray(emiss_pi, float) * np.asarray(n_ion_emit, float)
             data_source = 'chianti'
         else:
+            # metal_atoms: recomb lines use the parent (n_ion), CEL/resonance use
+            # the emitter (n_ion == n_ion_emit when no recomb_parent is set)
             j = ma.line_emissivity(name, T, n_e, n_ion)    # erg/s/cm³ (provisional)
             data_source = 'prov'
         # resonance-line optical depth: τ_zone = σ_int·f_lu·λ·n_lower·t_exp for a
@@ -512,6 +544,18 @@ def compute_metal_lines(state, snap=None, win_kms: float = 5000.0,
             P = thin_emission_profile(lam_grid, lam0, v, w)   # ∫P dλ = 1
             P = _gaussian_smooth(lam_grid, P, lam0, smooth_kms)
             profile_method = 'boxcar'
+        # ---- VALIDATION (#2): boxy-width vs emitting-shell velocity. The flat-top
+        # half-width of a shell-formed line should track the velocity of the gas
+        # that actually emits it (the emission-measure-weighted median |v|), NOT
+        # the fast forward shock. A profile HWHM far from that velocity signals an
+        # artificially narrow (clipped window) or broad (mis-placed emissivity)
+        # shape rather than physics. Diagnostic only — never alters L or the shape.
+        v_shell_emit = float(_weighted_vquantile(v_kms, w, 0.50))   # km/s
+        v_prof_hwhm = _profile_hwhm_kms(lam_grid, P, lam0)          # km/s
+        width_ratio = (v_prof_hwhm / v_shell_emit
+                       if (np.isfinite(v_prof_hwhm) and v_shell_emit > 0)
+                       else float('nan'))
+        width_ok = bool(np.isfinite(width_ratio) and 0.4 <= width_ratio <= 6.0)
         # normalise the line to MY line-centre continuum (clean, symmetric;
         # avoids the kernel's wide-window continuum-slope artifact)
         F_norm = 1.0 + (L_line / (4.0 * np.pi * R_phot ** 2)) * P \
@@ -558,6 +602,11 @@ def compute_metal_lines(state, snap=None, win_kms: float = 5000.0,
             tau_med=0.0, lambda_rest=lam0,
             ew_unreliable=ew_unreliable,
             v95_kms=v95,
+            # boxy-width validation (#2): emitting-shell velocity, profile HWHM,
+            # their ratio, and a pass flag (shell-formed lines: HWHM ~ v_shell).
+            v_shell_emit_kms=v_shell_emit,
+            v_prof_hwhm_kms=v_prof_hwhm,
+            width_ratio=width_ratio, width_ok=width_ok,
             # metal lines are first-principles (no anchor/correction):
             L_line_corrected=L_line, EW_corrected=EW_out,
             F_norm_corrected=F_norm.copy(),
@@ -598,6 +647,17 @@ def compute_metal_lines(state, snap=None, win_kms: float = 5000.0,
             pcyg_str = " +P-Cygni" if pcyg else ""
             print(f"        {nm:14s} {mech:4s} [{src_tag}] prof={prof:6s} "
                   f"L_line={L:.3e} erg/s  {ew_str}{thick}{pcyg_str}")
+        # boxy-width validation (#2): profile HWHM vs the emitting-shell velocity
+        print(f"[metal] boxy-width check (HWHM vs emitting-shell v50; shell-formed "
+              f"lines: ratio ~0.5-1.5, the half-max on the boxy shoulder):")
+        for nm in (r[0] for r in rows):
+            s = spectra[nm]
+            vs = s.get('v_shell_emit_kms', float('nan'))
+            vh = s.get('v_prof_hwhm_kms', float('nan'))
+            wr = s.get('width_ratio', float('nan'))
+            flag = "ok" if s.get('width_ok') else "⚠ CHECK"
+            print(f"        {nm:14s} v_shell={vs:7.0f}  HWHM={vh:7.0f} km/s  "
+                  f"ratio={wr:4.2f}  [{flag}]")
     return spectra, ions
 
 

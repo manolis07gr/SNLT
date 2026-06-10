@@ -108,8 +108,17 @@ METAL_LINES = {
     'C_III_1909': dict(ion='C_III', lam_AA=1908.73, mech='cel',   # ] intercombination
                        Omega=(1.10, 0.00), g_l=1, g_u=9, dE_eV=6.50,
                        A_ul=120.0, branch=1.0),               # n_crit ~ 5e9 cm⁻³
+    # C III λ4650 (V1 multiplet, 2s3p ³P° → 2s3s ³S) — an OPTICAL RECOMBINATION
+    # line: emitted by C²⁺ but POPULATED BY RECOMBINATION OF C³⁺ (recomb_parent=
+    # 'C_IV'), and cascade-dominated (the ³P° upper term is spin-forbidden from the
+    # ¹S ground, so collisional excitation is negligible — this line genuinely
+    # scales with n_e·n(C³⁺), not n(C²⁺)). α_eff = branch · α_tot(C³⁺→C²⁺, T): the
+    # multiplet branching times the total recombination rate, which bounds it
+    # physically and gives the correct T-dependence. branch≈0.02 is a literature-
+    # informed estimate (PPB91-consistent, ~factor-2 uncertain) — drop in the exact
+    # Pequignot+1991 V1 effective coefficient here to remove that residual.
     'C_III_4647': dict(ion='C_III', lam_AA=4647.42, mech='recomb',
-                       alpha_eff=(3.0e-14, -0.90)),          # 3s-3p recombination
+                       recomb_parent='C_IV', recomb_branch=2.0e-2),
     # --- Oxygen ---
     'O_I_6300':   dict(ion='O_I',   lam_AA=6300.30, mech='cel',   # [O I] 1D2 → 3P2
                        Omega=(0.27, 0.10), g_l=9, g_u=5, dE_eV=1.967,
@@ -169,11 +178,30 @@ def line_color(line_name):
 # 3. Emissivity functions  [erg/s/cm³]  (per zone)
 # ---------------------------------------------------------------------------
 def recomb_emissivity(line_name, T, n_e, n_ion):
-    """Recombination-line volume emissivity j = hν · α_eff(T) · n_e · n_ion."""
+    """Recombination-line volume emissivity j = hν · α_eff(T) · n_e · n_ion.
+
+    `n_ion` must be the density of the RECOMBINING (parent) ion — i.e. the ion
+    ONE stage ABOVE the emitter — because the line is produced when that ion
+    captures an electron and cascades down through the emitting level. The caller
+    (metal_lines) supplies the parent density when the line dict carries
+    `recomb_parent`; otherwise it passes the line's own ion (correct for the
+    resonance-line fallback, where the emitter and the radiating ion coincide).
+
+    Two ways to set α_eff(T):
+      • `recomb_branch` (preferred): α_eff = branch · α_tot(parent, T), the
+        multiplet branching fraction times the TOTAL (Badnell-form) recombination
+        rate of the parent ion. This bounds α_eff ≤ α_tot and carries the real
+        recombination temperature dependence; only the branching is uncertain.
+      • `alpha_eff = (A, b)`: a direct A·(T/1e4)^b fit (legacy / resonance fallback).
+    """
     d = METAL_LINES[line_name]
-    A, b = d['alpha_eff']
     T = np.maximum(np.asarray(T, float), 100.0)
-    alpha = A * (T / 1.0e4) ** b
+    if 'recomb_branch' in d:
+        alpha = float(d['recomb_branch']) * alpha_recomb_total(
+            d.get('recomb_parent', d['ion']), T)
+    else:
+        A, b = d['alpha_eff']
+        alpha = A * (T / 1.0e4) ** b
     nu = C / (d['lam_AA'] * 1e-8)
     return H_PL * nu * alpha * np.asarray(n_e, float) * np.asarray(n_ion, float)
 
