@@ -19,12 +19,48 @@ CLI (called by production_runner --batch, or standalone):
     python make_phase5_movie.py 'prod_*_lines.npz' --out movie.mp4 --fps 3
 """
 import sys
+import os
 import re
 import glob
 import argparse
 import numpy as np
 
 C_KMS = 299792.458
+
+# Pretty species labels for the figure title.
+_SPECIES_LABEL = {'all': 'H + He + metal', 'metal': 'metal (C/O/Ne)',
+                  'he': 'He', 'h': 'H'}
+
+
+def _load_lightcurve(path):
+    """Load a STELLA mesa.lbol bolometric lightcurve → (t_days, log10_Lbol) or
+    None. Format: header row then columns [time(d), L_ubvri, L_bol(log10), ...];
+    the time origin is ~Lbol-max (peak near t=0), matching the snapshot epochs
+    (day*_post_Lbol_max), so no offset is needed."""
+    try:
+        d = np.genfromtxt(path, skip_header=1)
+        if d.ndim != 2 or d.shape[1] < 3:
+            return None
+        t = np.asarray(d[:, 0], float)
+        logL = np.asarray(d[:, 2], float)
+        m = np.isfinite(t) & np.isfinite(logL)
+        if m.sum() < 2:
+            return None
+        order = np.argsort(t[m])
+        return t[m][order], logL[m][order]
+    except Exception:
+        return None
+
+
+def _find_lightcurve(files, explicit):
+    """Resolve the mesa.lbol path: explicit --lightcurve, else next to the npzs."""
+    if explicit:
+        return _load_lightcurve(explicit)
+    if files:
+        cand = os.path.join(os.path.dirname(files[0]) or '.', 'mesa.lbol')
+        if os.path.isfile(cand):
+            return _load_lightcurve(cand)
+    return None
 
 # Preferred panel order (H first, then He I, then He II); any extra lines in the
 # file but not listed here are appended in file order.
@@ -98,6 +134,11 @@ def main(argv=None):
                    help="instead of a movie, save a STATIC grid PNG tiling the "
                         "selected lines (rows) across all epochs (columns). "
                         "--out should be a .png.")
+    p.add_argument('--lightcurve', default=None,
+                   help="path to a STELLA mesa.lbol bolometric lightcurve "
+                        "(time[d], _, log10 L_bol). Default: auto-detect mesa.lbol "
+                        "next to the npz files. Adds a lightcurve panel to the "
+                        "movie with a moving dot at the current epoch.")
     args = p.parse_args(argv)
 
     files = sorted(glob.glob(args.pattern), key=_epoch_from_name)
@@ -185,11 +226,17 @@ def main(argv=None):
 
     from matplotlib.animation import FuncAnimation, PillowWriter
 
+    # load the bolometric lightcurve (for the reference panel + moving dot)
+    lc = _find_lightcurve(files, args.lightcurve)
+
     ncols = 5
-    nrows = (nlines + ncols - 1) // ncols
+    # reserve ONE extra cell for the lightcurve panel (if a lightcurve is found)
+    n_cells = nlines + (1 if lc is not None else 0)
+    nrows = (n_cells + ncols - 1) // ncols
     fig, axes = plt.subplots(nrows, ncols, figsize=(3.6 * ncols, 2.9 * nrows))
     axes_flat = np.atleast_1d(axes).ravel()
-    sup = fig.suptitle('', fontsize=15, y=0.995)
+    sup = fig.suptitle('', fontsize=17, y=0.998, fontweight='bold')
+    species_label = _SPECIES_LABEL.get(args.species, args.species)
 
     lines2d, titles = {}, {}
     for k, n in enumerate(order):
@@ -204,13 +251,39 @@ def main(argv=None):
         ax.tick_params(labelsize=7)
         ax.grid(alpha=0.3)
         titles[n] = ax.set_title(n, fontsize=9)
-    for j in range(nlines, len(axes_flat)):
+
+    # ---- lightcurve reference panel + moving epoch marker ----
+    lc_dot = lc_vline = lc_txt = None
+    if lc is not None:
+        lc_ax = axes_flat[nlines]
+        t_lc, logL_lc = lc
+        lc_ax.plot(t_lc, logL_lc, '-', color='0.4', lw=1.4)
+        lc_ax.set_xlabel('t [d post-Lbol-max]', fontsize=8)
+        lc_ax.set_ylabel(r'log$_{10}$ L$_{bol}$ [erg/s]', fontsize=8)
+        lc_ax.set_title('Bolometric lightcurve', fontsize=9)
+        lc_ax.tick_params(labelsize=7)
+        lc_ax.grid(alpha=0.3)
+        # keep the x-range to the epochs actually shown (+ a little)
+        emin, emax = min(epochs), max(epochs)
+        lc_ax.set_xlim(min(emin, float(t_lc[0])) - 2,
+                       max(emax, emin + 1) + 5)
+        (lc_dot,) = lc_ax.plot([], [], 'o', color='crimson', ms=11, zorder=5)
+        lc_vline = lc_ax.axvline(epochs[0], color='crimson', ls='--', lw=1.0,
+                                 alpha=0.7)
+        lc_txt = lc_ax.text(0.04, 0.06, '', transform=lc_ax.transAxes,
+                            fontsize=11, fontweight='bold', color='crimson',
+                            ha='left', va='bottom')
+        first_empty = nlines + 1
+    else:
+        first_empty = nlines
+    for j in range(first_empty, len(axes_flat)):
         axes_flat[j].set_visible(False)
 
     def update(idx):
         ep, fr = frames[idx]
-        sup.set_text(f"Phase 5 multi-line H + He evolution    "
-                     f"t = {ep:.1f} d post-Lbol-max    (frame {idx+1}/{len(frames)})")
+        sup.set_text(f"{species_label} line evolution      "
+                     f"t = {ep:.1f} d post-Lbol-max      "
+                     f"(frame {idx+1}/{len(frames)})")
         arts = [sup]
         for n in order:
             ln = lines2d[n]
@@ -227,6 +300,14 @@ def main(argv=None):
             else:
                 ln.set_data([], [])
             arts += [ln, titles[n]]
+        # advance the lightcurve marker to the current epoch
+        if lc_dot is not None:
+            t_lc, logL_lc = lc
+            yv = float(np.interp(ep, t_lc, logL_lc))
+            lc_dot.set_data([ep], [yv])
+            lc_vline.set_xdata([ep, ep])
+            lc_txt.set_text(f"t = {ep:.1f} d\nlog L = {yv:.2f}")
+            arts += [lc_dot, lc_vline, lc_txt]
         return arts
 
     fig.tight_layout(rect=[0, 0, 1, 0.97])

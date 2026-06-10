@@ -183,7 +183,17 @@ It was validated against the SuperLite Model A1 IIP Hα (rest-peak amplitude ≈
   `phase5_continuum.py`, `snapshot_analyzer.py`, `opacity.py` (He free-free,
   P1 #4 root-fix) — supporting physics.
 - `make_phase5_movie.py` — standalone multi-line evolution movie from `*_lines.npz`
-  (`--species all/metal/he/h` filter).
+  (`--species all/metal/he/h` filter; `--grid` static tile). Each movie frame is
+  stamped with the SN phase (bold title) AND carries a **bolometric-lightcurve
+  panel** (auto-loaded from `mesa.lbol` in the model dir; cols time[d]/_/log10 Lbol,
+  time origin ≈ Lbol-max) with a moving crimson dot at the current epoch.
+- `grand_comparison.py` — **cross-model, cross-epoch feature ranking** (run after
+  the full grid). Ranks every H/He/metal line by corrected L at each model-epoch
+  → `grand_ranking.csv` (rank + frac of epoch total), `grand_metal_metrics.csv`
+  (per-epoch metal totals, dominant metal, C/O/Ne sub-totals, metal/all frac),
+  `grand_comparison.png` (per-model top-N L(t)), `grand_dominant_map.png` (model ×
+  epoch map of the single dominant feature, coloured by species). Reuses the
+  `snline_postproc` data layer; `--models`/`--top`/`--outdir`.
 - `fix_he_strengths.py` — post-processor to re-derive He strengths from existing
   npz without an MC re-run.
 
