@@ -166,7 +166,9 @@ It was validated against the SuperLite Model A1 IIP Hα (rest-peak amplitude ≈
     global "did not converge" is tripped only by an unrelated *He-like
     subordinate* line, not the metal lines. So `iterate to convergence max` was
     raised 3→6 (the lines fully settle; Cloudy stops early when converged, so
-    sparse fast epochs cost nothing) and the timeout 480→720 s. The thick
+    sparse fast epochs cost nothing) and the timeout 480→1800 s (the densest
+    interaction-peak decks reach ~600+ zones → ~1400-1800 Cloudy zones × up to 6
+    iterations; 720 s clipped C4 day030 into the CHIANTI fallback). The thick
     resonance absolute is now converged to ~1%, not a factor.
   - `metal_cloudy.py` — **Tier-2** (`--metal-cloudy`): override metal ABSOLUTES
     with Cloudy (self-consistent photoionization + NLTE + resonance-line RT),

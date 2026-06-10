@@ -407,7 +407,7 @@ def parse_emissivity(path, r_in):
     return out
 
 
-def run_cloudy(deck, linelist, r_in=None, workdir=None, timeout=720, keep=False):
+def run_cloudy(deck, linelist, r_in=None, workdir=None, timeout=1800, keep=False):
     """Run Cloudy on `deck`, returning (lums, emiss, reason) where lums =
     {cloudy_label: L_erg_s}, emiss = {cloudy_label: (radius_cm, emiss)} (empty if
     r_in is None or no .emis), reason a status string. Robust to abort/timeout."""
