@@ -7,6 +7,31 @@ first step. **Status tags:** ✅ DONE · ◑ PARTIAL · ☐ OPEN.
 
 ## P0 — Data-plumbing fixes (cheap, blocking for publication)
 
+**0. Binary shock-X-ray escape gate flickers the metal high-ion lines.  ☐ OPEN
+(root-caused; the real source of the C IV / [O III] / [Ne III] epoch-to-epoch
+flicker — NOT Cloudy).** The full-grid C4 run revealed C IV 1549 oscillating at
+the shock-breakout epochs: day4 1.3e35 → day5 5.7e40 → day6 1.8e35 → day7 6.0e40,
+then steady ~6-8e40 from day8. The line faithfully tracks the carbon ionization,
+which is what flickers: C³⁺ = 0.0002 (d4) / 0.96 (d5) / 0.00 (d6) / 0.89 (d7).
+Root cause is the **binary** interior-shock gate in `photoionize_csm.py:631`:
+```python
+shock_escapes = (shock_params.get('R_s', 0.0) >= R_phot)   # hard ON/OFF
+```
+Around breakout the shock front sits *at* the photosphere, so `R_s` crosses
+`R_phot` back and forth between adjacent snapshots and this `>=` toggles the
+ENTIRE shock X-ray field (≈19× L_phot) on/off — swinging carbon between C²⁺ and
+90% C³⁺. The shock X-ray *luminosity* itself is perfectly smooth (4.5→5.5e43).
+The same gate feeds the H/He field (`phase5_runner._build_merged_state` zeroes
+`merged.L_X_brems` on the same flag), so the fix is global. *Fix:* replace the
+binary `shock_escapes` with a SMOOTH transmission `f_X = exp(-τ_overlying)` where
+`τ_overlying` is the (electron-scattering + photoabsorption) column from `R_s`
+out to `R_phot`: `f_X→1` when the shock is at/above the photosphere, `f_X→0` as
+it buries, and ~exp(-1)≈0.37 for a shock one optical depth under — a continuous
+C³⁺(t) instead of a square wave. Physically correct (X-ray escape is exponential
+in overlying τ, not a step) and regime-general. **Needs a full grid re-run to
+validate (touches core shock physics for ALL models, H/He and metals); do not
+ship blind.**
+
 **1. Shared late-epoch snapshot bug.  ✅ DONE.**
 ~~The batch loader substitutes a single common file for late epochs when a
 model-specific snapshot is missing, producing byte-identical day-150/160 (A),
