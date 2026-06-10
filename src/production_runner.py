@@ -196,7 +196,8 @@ def load_snapshot(path, fmt='auto', verbose=False, truncate_stella=True,
         shock_params = None
         if include_shock_xray:
             from photoionize_csm import derive_shock_params
-            shock_params = derive_shock_params(snap, verbose=verbose)
+            shock_params = derive_shock_params(snap, verbose=verbose,
+                                               tau_phot_ref=tau_es_phot)
             if verbose and shock_params is not None:
                 print(f"[load_snapshot] shock-bremsstrahlung component included: "
                       f"L_X_brems = {shock_params['L_X_brems']:.3e} erg/s "

@@ -655,18 +655,24 @@ def _build_merged_state(state, snap) -> types.SimpleNamespace:
         if 'T_shock' in snap:
             merged.T_shock = snap['T_shock']
         if 'L_X_brems' in snap:
-            # Apply the SAME interior-shock gate that photoionize_csm uses for the
-            # H/He field: a shock buried INSIDE R_phot has its hard X-rays
-            # reprocessed/thermalized by the overlying optically-thick gas and they
-            # do NOT escape to ionize the line-forming CSM. Without this the metal
-            # high-ion lines ([O III], C IV, [Ne III]) flicker epoch-to-epoch on the
-            # (sometimes spuriously huge) buried-shock L_X — the ion balance flips
-            # O²⁺↔O³⁺ between adjacent snapshots. Also cap the escaping X-rays at
-            # L_phot (energy conservation — the ionizing flux can't exceed L_bol).
+            # Apply the SAME smooth interior-shock attenuation that photoionize_csm
+            # uses for the H/He field: a shock buried inside R_phot has its hard
+            # X-rays partially reprocessed by the overlying optically-thick gas, so
+            # only a fraction f_xray_escape = exp(−Δτ_es) reaches the line-forming
+            # CSM. Scaling by this CONTINUOUS factor (rather than the old binary
+            # interior/exterior gate) is what stops the metal high-ion lines
+            # (C III↔C IV, [O III], [Ne III]) flickering epoch-to-epoch as the
+            # shock front wobbles across R_phot at the breakout epochs — the ion
+            # balance now varies smoothly with the (smooth) shock depth. Also cap
+            # the escaping X-rays at L_phot (energy conservation — the ionizing
+            # flux can't exceed L_bol). Falls back to the binary include_shock_xray
+            # flag for snapshots produced before f_xray_escape was stored.
             _pip = snap.get('photoionization_params') or {}
             _lx = float(snap['L_X_brems'])
-            if not bool(_pip.get('include_shock_xray', True)):
-                _lx = 0.0
+            _fx = _pip.get('f_xray_escape', None)
+            if _fx is None:
+                _fx = 1.0 if bool(_pip.get('include_shock_xray', True)) else 0.0
+            _lx *= float(_fx)
             _lp = float(getattr(merged, 'L_phot', 0.0) or 0.0)
             if _lp <= 0:
                 _Rp = float(getattr(merged, 'R_phot_cm',

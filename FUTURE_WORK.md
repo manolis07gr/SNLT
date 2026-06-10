@@ -7,30 +7,27 @@ first step. **Status tags:** ✅ DONE · ◑ PARTIAL · ☐ OPEN.
 
 ## P0 — Data-plumbing fixes (cheap, blocking for publication)
 
-**0. Binary shock-X-ray escape gate flickers the metal high-ion lines.  ☐ OPEN
-(root-caused; the real source of the C IV / [O III] / [Ne III] epoch-to-epoch
-flicker — NOT Cloudy).** The full-grid C4 run revealed C IV 1549 oscillating at
-the shock-breakout epochs: day4 1.3e35 → day5 5.7e40 → day6 1.8e35 → day7 6.0e40,
-then steady ~6-8e40 from day8. The line faithfully tracks the carbon ionization,
-which is what flickers: C³⁺ = 0.0002 (d4) / 0.96 (d5) / 0.00 (d6) / 0.89 (d7).
-Root cause is the **binary** interior-shock gate in `photoionize_csm.py:631`:
-```python
-shock_escapes = (shock_params.get('R_s', 0.0) >= R_phot)   # hard ON/OFF
-```
-Around breakout the shock front sits *at* the photosphere, so `R_s` crosses
-`R_phot` back and forth between adjacent snapshots and this `>=` toggles the
-ENTIRE shock X-ray field (≈19× L_phot) on/off — swinging carbon between C²⁺ and
-90% C³⁺. The shock X-ray *luminosity* itself is perfectly smooth (4.5→5.5e43).
-The same gate feeds the H/He field (`phase5_runner._build_merged_state` zeroes
-`merged.L_X_brems` on the same flag), so the fix is global. *Fix:* replace the
-binary `shock_escapes` with a SMOOTH transmission `f_X = exp(-τ_overlying)` where
-`τ_overlying` is the (electron-scattering + photoabsorption) column from `R_s`
-out to `R_phot`: `f_X→1` when the shock is at/above the photosphere, `f_X→0` as
-it buries, and ~exp(-1)≈0.37 for a shock one optical depth under — a continuous
-C³⁺(t) instead of a square wave. Physically correct (X-ray escape is exponential
-in overlying τ, not a step) and regime-general. **Needs a full grid re-run to
-validate (touches core shock physics for ALL models, H/He and metals); do not
-ship blind.**
+**0. Binary shock-X-ray escape gate flickered the metal high-ion lines.  ✅ DONE.**
+~~The full-grid C4 run revealed C IV 1549 oscillating at the shock-breakout
+epochs: day4 1.3e35 → day5 5.7e40 → day6 1.8e35 → day7 6.0e40. The line tracks the
+carbon ionization, which flickered: C³⁺ = 0.0002 (d4) / 0.96 (d5) / 0.00 (d6) /
+0.89 (d7). Root cause was the **binary** interior-shock gate in
+`photoionize_csm.py` (`shock_escapes = R_s >= R_phot`): around breakout the shock
+sits *at* the photosphere, so `R_s` crosses `R_phot` between snapshots and the
+`>=` toggled the ENTIRE shock X-ray field on/off.~~ *Fixed:* `derive_shock_params`
+now computes a SMOOTH transmission `f_xray_escape = exp(−max(0, τ_es@shock −
+τ_phot_ref))` from the overlying electron-scattering column (the full snapshot's
+cumulative `tau_es`, photosphere ref = the run's `tau_es_phot`), stored in
+`photoionization_params`. The H/He field (`solve_photoionization_equilibrium`
+scales `xray_coef`) and the metals (`phase5_runner._build_merged_state` scales
+`merged.L_X_brems`, which `metal_lines`→`metal_ionization` read) both multiply by
+it instead of the old all-or-nothing gate; falls back to the binary flag for
+pre-existing snapshots. **Validated on C4 day4-7:** f_xray_escape now
+0.74/1.00/0.98/1.00 (was 0/1/0/1), C³⁺ now 0.997/0.963/0.987/0.893 (was
+~0/0.96/0/0.89), C IV now 2.16e41/5.74e40/1.02e41/5.98e40 — smooth, no 5-dex
+collapse, and the already-escaping epochs (day5/7, f=1) are bit-unchanged.
+Physically correct (X-ray escape is exponential in overlying τ, not a step) and
+regime-general (feeds H/He and metals identically across A/B/C).
 
 **1. Shared late-epoch snapshot bug.  ✅ DONE.**
 ~~The batch loader substitutes a single common file for late epochs when a

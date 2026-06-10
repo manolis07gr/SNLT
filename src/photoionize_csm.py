@@ -193,7 +193,8 @@ def _alpha_B(T: np.ndarray) -> np.ndarray:
 # Shock-bremsstrahlung physics
 # ---------------------------------------------------------------------------
 
-def derive_shock_params(snap_full: dict, verbose: bool = False) -> dict | None:
+def derive_shock_params(snap_full: dict, verbose: bool = False,
+                        tau_phot_ref: float = 2.0 / 3.0) -> dict | None:
     """Derive forward-shock parameters from a full (un-truncated) snapshot.
 
     Uses snapshot hydro (v, ρ, r) to identify the forward-shock location and
@@ -296,6 +297,31 @@ def derive_shock_params(snap_full: dict, verbose: bool = False) -> dict | None:
     sanity_ratio = L_X_brems / max(L_phot_snap, 1e-30)
     sanity_flag = sanity_ratio > 100.0  # flag if 100× implausible
 
+    # ---- SMOOTH shock-X-ray escape factor (replaces the old binary R_s≥R_phot
+    # gate). The hard X-rays emitted at R_s must cross the overlying gas to reach
+    # the photosphere/line-forming CSM; the escaping fraction is exp(−Δτ_es),
+    # where Δτ_es is the electron-scattering column BETWEEN the shock and the
+    # photosphere (τ_es = tau_phot_ref, default 2/3). The full snapshot's
+    # `tau_es` is cumulative from the outer edge inward (small outside, large
+    # inside, = tau_phot_ref at the photosphere), so:
+    #   shock at/above the photosphere (τ_es ≤ ref) → Δτ = 0      → f = 1
+    #   shock buried one optical depth under         → Δτ = 1      → f ≈ 0.37
+    #   shock deep in the optically-thick interior   → Δτ ≫ 1      → f → 0
+    # Because f is CONTINUOUS in R_s, the X-ray field no longer toggles on/off as
+    # the shock front wobbles across R_phot between adjacent snapshots — which was
+    # the true source of the metal high-ion (C III↔C IV, [O III]) epoch-to-epoch
+    # flicker and the matching H/He ionization jitter at the breakout epochs.
+    tau_es_full = snap_full.get('tau_es', None)
+    if tau_es_full is not None and idx_shock < len(np.atleast_1d(tau_es_full)):
+        tau_sh = float(np.asarray(tau_es_full, float)[idx_shock])
+        f_xray_escape = float(np.exp(-max(0.0, tau_sh - float(tau_phot_ref))))
+    else:
+        # Fallback (no tau_es array): recover the old binary behaviour from the
+        # geometric criterion, expressed as f∈{0,1} so downstream code is uniform.
+        tau_sh = float('nan')
+        R_phot_guess = float(snap_full.get('R_phot_inner', 0.0) or 0.0)
+        f_xray_escape = 1.0 if (R_phot_guess <= 0 or R_s >= R_phot_guess) else 0.0
+
     if verbose:
         kT_keV = KB * T_shock / EV / 1000
         print(f"[derive_shock_params]")
@@ -308,6 +334,8 @@ def derive_shock_params(snap_full: dict, verbose: bool = False) -> dict | None:
         print(f"  t_dyn       = {t_dyn:.2e} s")
         print(f"  η_rad       = {eta_rad:.3f}")
         print(f"  L_X (>13.6eV) = {L_X_brems:.3e} erg/s  ({f_above_LyC*100:.1f}% of brems)")
+        print(f"  f_xray_escape = {f_xray_escape:.3f}  (τ_es@shock = {tau_sh:.2f}, "
+              f"ref = {float(tau_phot_ref):.2f}; L_X·f = {L_X_brems*f_xray_escape:.3e} erg/s)")
         if sanity_flag:
             print(f"  ⚠ SANITY WARNING: L_X_brems = {L_X_brems:.2e} is "
                   f"{sanity_ratio:.0f}× L_phot ({L_phot_snap:.2e}).")
@@ -320,6 +348,7 @@ def derive_shock_params(snap_full: dict, verbose: bool = False) -> dict | None:
         T_shock=T_shock, L_shock=L_shock,
         eta_rad=eta_rad, t_cool=t_cool, t_dyn=t_dyn,
         L_X_brems=L_X_brems,
+        f_xray_escape=f_xray_escape, tau_es_shock=tau_sh,
         idx_shock=idx_shock, idx_csm=idx_csm,
         sanity_ratio_L_X_over_L_phot=sanity_ratio, sanity_flag=sanity_flag,
     )
@@ -628,15 +657,19 @@ def solve_photoionization_equilibrium(
     # ionize. This single physical criterion auto-includes the genuine IIn
     # forward-shock-into-CSM and auto-excludes interior velocity features
     # (e.g. the inner-ejecta/CDS edge in a plateau IIP).
-    shock_escapes = (shock_params is not None
-                     and float(shock_params.get('R_s', 0.0)) >= R_phot)
+    # SMOOTH escape: scale the shock X-ray field by f_xray_escape = exp(−Δτ_es)
+    # (computed in derive_shock_params from the overlying electron-scattering
+    # column) instead of the old binary R_s≥R_phot ON/OFF switch. Continuous in
+    # the shock position → no epoch-to-epoch toggling of the ionizing flux.
+    f_xray_escape = (float(shock_params.get('f_xray_escape', 1.0))
+                     if shock_params is not None else 0.0)
     use_xray = bool(include_shock_xray and shock_params is not None
                     and shock_params.get('L_X_brems', 0.0) > 0.0
-                    and shock_escapes)
-    if verbose and include_shock_xray and shock_params is not None and not shock_escapes:
-        print(f"[photoionize_csm] shock X-rays SKIPPED: shock at R_s="
-              f"{float(shock_params.get('R_s',0.0)):.2e} cm is interior to "
-              f"R_phot={R_phot:.2e} cm (optically thick → no escaping ionizing flux).")
+                    and f_xray_escape > 1.0e-3)
+    if verbose and include_shock_xray and shock_params is not None and f_xray_escape < 0.999:
+        print(f"[photoionize_csm] shock X-rays ATTENUATED: f_xray_escape="
+              f"{f_xray_escape:.3f} (overlying τ_es column above R_s="
+              f"{float(shock_params.get('R_s',0.0)):.2e} cm; smooth gate, not on/off).")
     if use_xray:
         T_shock = float(shock_params['T_shock'])
         L_X_brems = float(shock_params['L_X_brems'])
@@ -655,8 +688,9 @@ def solve_photoionization_equilibrium(
         G_brems_eng_table = _G_function_brems_energy(T_shock, tau_table)
         G_brems_eng_at_zero = _G_function_brems_energy(T_shock, 0.0)
         # Coefficient that converts G_brems → Γ_brems given W:
-        # coef × W × G_brems = Γ_brems
-        xray_coef = L_X_brems / (np.pi * R_phot**2)
+        # coef × W × G_brems = Γ_brems. Scaled by the smooth escape fraction so a
+        # partially-buried shock contributes a partial (not all-or-nothing) flux.
+        xray_coef = f_xray_escape * L_X_brems / (np.pi * R_phot**2)
     else:
         T_shock = 0.0
         L_X_brems = 0.0
@@ -892,6 +926,7 @@ def solve_photoionization_equilibrium(
         L_normalize_to_snap=L_normalize_to_snap, f_norm=f_norm,
         T_eq_floor=T_eq_floor,
         include_shock_xray=use_xray,
+        f_xray_escape=f_xray_escape,
         shock_params=(dict(shock_params) if shock_params is not None else None),
         max_iter=max_iter, tol=tol, damping=damping,
         n_tau_table=n_tau_table,
