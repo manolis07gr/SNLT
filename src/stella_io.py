@@ -89,7 +89,7 @@ def parse_epoch_from_filename(path):
     float or None if the filename doesn't match the expected pattern.
     """
     name = os.path.basename(path)
-    m = re.search(r'day(\d+(?:\.\d+)?)_post', name)
+    m = re.search(r'day(-?\d+(?:\.\d+)?)_post', name)
     if m:
         try:
             return float(m.group(1))

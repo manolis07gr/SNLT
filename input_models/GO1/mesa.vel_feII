@@ -1,0 +1,4 @@
+# v where tau Sob for FeII 5169 is (low,medium,high)    0.200   1.000   2.000
+        t post max Lbol           v_tau_lo          v_tau_med           v_tau_hi                rho                  T                eta           m_tau_lo           r_tau_lo          m_tau_med          r_tau_med           m_tau_hi           r_tau_hi
+  356        2.2628E+01         5.1214E+03         5.1100E+03         5.0932E+03         1.9804E-12         1.2050E+04         9.0617E-06         9.6205E+00         2.5531E+15         9.4209E+00         2.5422E+15         9.0521E+00         2.5350E+15
+  359        2.4628E+01         5.1430E+03         5.1375E+03         5.1289E+03         9.5425E-13         1.0864E+04         2.1361E-05         9.6494E+00         2.6486E+15         9.5416E+00         2.6379E+15         9.4127E+00         2.6328E+15

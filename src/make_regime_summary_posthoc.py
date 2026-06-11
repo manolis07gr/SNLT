@@ -32,7 +32,7 @@ import regime_diagnostics as rd
 
 def parse_epoch(path):
     """Extract epoch number from filename like 'prod_day030_lines.npz'."""
-    m = re.search(r'day(\d+(?:\.\d+)?)', os.path.basename(path))
+    m = re.search(r'day(-?\d+(?:\.\d+)?)', os.path.basename(path))
     return float(m.group(1)) if m else None
 
 

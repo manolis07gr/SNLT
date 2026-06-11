@@ -72,7 +72,7 @@ _PREFERRED = [
 
 
 def _epoch_from_name(path):
-    m = re.search(r'day[_]?(\d+(?:\.\d+)?)', path)
+    m = re.search(r'day[_]?(-?\d+(?:\.\d+)?)', path)
     return float(m.group(1)) if m else 0.0
 
 

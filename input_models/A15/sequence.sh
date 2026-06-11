@@ -1,0 +1,17 @@
+python3 csi_line_simulator.py mesa.day002_post_Lbol_max.data
+python3 csi_line_simulator.py mesa.day004_post_Lbol_max.data
+python3 csi_line_simulator.py mesa.day006_post_Lbol_max.data
+python3 csi_line_simulator.py mesa.day008_post_Lbol_max.data
+python3 csi_line_simulator.py mesa.day010_post_Lbol_max.data
+python3 csi_line_simulator.py mesa.day020_post_Lbol_max.data
+python3 csi_line_simulator.py mesa.day030_post_Lbol_max.data
+python3 csi_line_simulator.py mesa.day040_post_Lbol_max.data
+python3 csi_line_simulator.py mesa.day050_post_Lbol_max.data
+python3 csi_line_simulator.py mesa.day060_post_Lbol_max.data
+python3 csi_line_simulator.py mesa.day070_post_Lbol_max.data
+python3 csi_line_simulator.py mesa.day080_post_Lbol_max.data
+python3 csi_line_simulator.py mesa.day090_post_Lbol_max.data
+python3 csi_line_simulator.py mesa.day100_post_Lbol_max.data
+python3 csi_line_simulator.py mesa.day110_post_Lbol_max.data
+python3 csi_line_simulator.py mesa.day120_post_Lbol_max.data
+python3 csi_line_simulator.py mesa.day130_post_Lbol_max.data

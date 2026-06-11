@@ -282,7 +282,7 @@ def snap_name_from_path(path):
     """
     base = os.path.basename(path)
     # STELLA: extract dayXXX[.X]
-    m = re.search(r'day(\d+(?:\.\d+)?)_post', base)
+    m = re.search(r'day(-?\d+(?:\.\d+)?)_post', base)
     if m:
         return f"day{m.group(1)}"
     # HERACLES
@@ -3266,7 +3266,7 @@ def main():
         else:  # stella
             snap_paths = stella_paths
             def stella_epoch(p):
-                m = re.search(r'day(\d+(?:\.\d+)?)_post', os.path.basename(p))
+                m = re.search(r'day(-?\d+(?:\.\d+)?)_post', os.path.basename(p))
                 return float(m.group(1)) if m else 9999.0
             snap_paths.sort(key=stella_epoch)
 
