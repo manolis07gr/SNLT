@@ -217,6 +217,40 @@ post-interaction tail becomes physical rather than discarded.
 
 ---
 
+**7. Optical-spectrum fidelity: expanded line list + narrow-CSM profile +
+synthetic-spectrum assembly.  ◑ IN PROGRESS (Stage 1 done).** Benchmarking C4-C7
+against the real Icn prototypes (SN 2019hgp/2021csp, TNS public spectra in
+`obs_comparison/`) showed three concrete gaps: (i) the optical carbon forest
+(C III 5696, C IV 5801/12, C II 4267/6580/7236) plus O/Ne/Mg lines beyond our
+6-line metal set; (ii) the early narrow/intermediate-width P-Cygni from the
+UNSHOCKED CSM (we produce only the broad interaction shell); (iii) blends + a
+comparable assembled spectrum. **Chosen approach (not a full RT synthesis
+engine):** keep the validated per-line physics, expand the diagnostically-
+important lines (chosen DATA-DRIVENLY by mining Cloudy's full `save line list`
+per composition/epoch), add the narrow-CSM component, and ASSEMBLE all line
+profiles onto a wavelength grid over the computed continuum → a synthetic
+spectrum overplottable on observations. Full opacity-expansion synthesis (needed
+only for the IIn Fe II forest) stays a separate future project.
+*Staged plan (each gated, backwards-compat enforced — existing IIP/IIn/Ibn/Icn
+line results must be unchanged when new features are OFF):*
+- **Stage 1 — narrow-CSM P-Cygni profile.  ✅ done (component-validated).**
+  `csm_narrow_profile.py`: additive narrow component (flat-top emission at
+  v_wind; resonance lines get a sub-continuum blue trough via exp(-τ) continuum
+  attenuation; forbidden lines pure emission). Off-state = exactly zero. Unit
+  tests pass. *Integration into `metal_lines` (add the narrow component to the
+  broad MC profile, amplitude from the unshocked-CSM emission measure) is gated
+  on the running grid finishing — editing live modules mid-run would desync it.*
+- **Stage 2 — optical C lines** (C III 5696, C IV 5801/12, C II 4267/6580/7236),
+  atomic data Cloudy/CHIANTI-anchored, added to `metal_atoms.METAL_LINES`.
+- **Stage 3 — O/Ne/Mg lines** (O II, [O II], O I 7774, Mg II 4481, [Ne III] have)
+  per the regime, data-driven from the Cloudy line-list mining.
+- **Stage 4 — `synthetic_spectrum.py`** assembly: continuum + Σ line profiles on
+  a λ grid → overplot vs `obs_comparison/` real spectra.
+*Validation gates (post-grid):* after EACH stage re-run a IIP (A1), IIn (A4), Ibn
+(C... He-dominated) and Icn (C4) control and diff the EXISTING 13+6 lines'
+L/EW/profiles — must be unchanged to numerical precision; only NEW lines/the
+narrow component may differ. Backwards compatibility is the acceptance criterion.
+
 ## P3 — Geometry & viewing angle
 
 **7. 2D / asymmetric snapshots.**
