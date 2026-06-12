@@ -423,16 +423,33 @@ def compute_metal_lines(state, snap=None, win_kms: float = 5000.0,
         if v_out.size:
             v_wind_global = float(np.median(v_out))
         # PHYSICAL GATE: a narrow CSM core exists only while there IS slow
-        # unshocked wind ahead of the shock. If the outer zones are fast
-        # (no-CSM models: free homologous ejecta; post-sweep epochs: the CSM is
-        # fully shocked), there is no slow wind and no narrow component — which
-        # matches observations (IIn/Icn narrow lines disappear once the CSM is
-        # swept). 3500 km/s covers the fastest known Icn winds (~3000 km/s).
-        if v_wind_global > 3500.0:
+        # unshocked wind ahead of the shock. The test is RELATIVE: the outer
+        # zones must be slow COMPARED TO the fast ejecta/shell (an absolute cap
+        # wrongly killed GO1's genuine v_csm=3000 wind at 5499 km/s while a
+        # no-CSM model's free ejecta and a post-sweep epoch both show outer
+        # velocities comparable to the fast material). Skip when the outer-zone
+        # wind is more than half the fast-material velocity scale (q99 of |v|)
+        # — no separable slow component exists then, matching the observed
+        # disappearance of narrow lines once the CSM is swept.
+        v_fast = float(np.nanquantile(v_kms[np.isfinite(v_kms) & (v_kms > 0)], 0.99)) \
+            if np.any(np.isfinite(v_kms) & (v_kms > 0)) else 0.0
+        if v_fast > 0 and v_wind_global > 0.5 * v_fast:
             if verbose:
-                print(f"[metal] narrow-CSM: outer zones fast "
-                      f"({v_wind_global:.0f} km/s > 3500) — no unshocked slow "
-                      f"wind (no-CSM or post-sweep); narrow component skipped.")
+                if v_wind_global < 6500.0:
+                    # embedded case (real early Icn): the photosphere sits INSIDE
+                    # the CSM, the whole emitting region is slow wind — the
+                    # emergent profile already IS the narrow-CSM profile (and
+                    # resonance lines keep their P-Cygni overlay); nothing broad
+                    # exists to redistribute from.
+                    print(f"[metal] narrow-CSM: emitting region is entirely slow "
+                          f"CSM ({v_wind_global:.0f} ~ q99={v_fast:.0f} km/s; "
+                          f"photosphere embedded in the wind) — profile already "
+                          f"narrow, no redistribution needed.")
+                else:
+                    print(f"[metal] narrow-CSM: outer zones ({v_wind_global:.0f} "
+                          f"km/s) not slow vs the fast material (q99={v_fast:.0f})"
+                          f" — no separable unshocked wind (no-CSM or post-sweep);"
+                          f" skipped.")
             v_wind_global = 0.0
 
     # ---- Tier-2: Cloudy absolute line luminosities (self-consistent
@@ -615,7 +632,14 @@ def compute_metal_lines(state, snap=None, win_kms: float = 5000.0,
                 Epos = np.clip(E, 0.0, None)
                 area = float(np.sum(Epos) * dl)
                 if narrow_v_wind > 0 and area > 0:
-                    f_n = 0.35                       # emission fraction in narrow core
+                    # EMISSION-MEASURE-based narrow fraction (item 4): the share
+                    # of this line's emissivity that comes from the SLOW unshocked
+                    # gas (|v| <= 1.5 v_wind) — for a GO1-like dense CSM the narrow
+                    # component emerges near-dominant on its own; for weak CSM it
+                    # stays small. Replaces the fixed f_n=0.35 prescription.
+                    _slow = np.abs(v_kms) <= 1.5 * narrow_v_wind
+                    f_n = float(np.clip(np.sum(w[_slow]) /
+                                        max(float(np.sum(w)), 1e-300), 0.05, 0.9))
                     core = _cn.narrow_csm_component(v_grid, narrow_v_wind,
                                                     amp_em=1.0, depth_abs=0.0)
                     ca = float(np.sum(np.clip(core, 0.0, None)) * dl)
@@ -631,7 +655,7 @@ def compute_metal_lines(state, snap=None, win_kms: float = 5000.0,
                         F_norm = 1.0 + E_new
                         if verbose:
                             print(f"[metal] narrow-CSM applied to {name}: "
-                                  f"v_wind={narrow_v_wind:.0f} km/s, f_n={f_n}")
+                                  f"v_wind={narrow_v_wind:.0f} km/s, f_n={f_n:.2f}")
             except Exception as _e:
                 if verbose:
                     print(f"[metal] narrow-CSM skipped for {name}: {_e}")
