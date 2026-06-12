@@ -58,6 +58,11 @@ ION_DATA = {
     'C_II':  dict(elem='C', stage=2, chi_eV=24.383, sigma0=4.6e-18, s_xsec=2.5),
     'C_III': dict(elem='C', stage=3, chi_eV=47.888, sigma0=1.6e-18, s_xsec=2.5),
     'C_IV':  dict(elem='C', stage=4, chi_eV=64.494, sigma0=7.0e-19, s_xsec=3.0),
+    # He-like C: ionizing C³⁺→C⁴⁺ takes 392 eV (hard X-rays only — the shock-brems
+    # channel). Added (item 3) as the recombination parent of C IV 5801/12; at
+    # photospheric ~2e4 K BB alone, C⁴⁺ is negligible, so the ladder shift to the
+    # existing C_IV fraction is small except at strongly shock-irradiated epochs.
+    'C_V':   dict(elem='C', stage=5, chi_eV=392.09, sigma0=2.0e-19, s_xsec=3.0),
     # Oxygen
     'O_I':   dict(elem='O', stage=1, chi_eV=13.618, sigma0=2.9e-18, s_xsec=2.0),
     'O_II':  dict(elem='O', stage=2, chi_eV=35.121, sigma0=6.0e-18, s_xsec=2.5),
@@ -73,6 +78,7 @@ ION_DATA = {
 # α = A (T/1e4)^b). PROVISIONAL ~Badnell. Keyed by the RECOMBINING (upper) ion.
 RECOMB_TOTAL = {
     'C_II':  (4.7e-13, -0.65), 'C_III': (2.3e-12, -0.65), 'C_IV': (5.0e-12, -0.70),
+    'C_V':   (2.3e-11, -0.70),   # He-like C⁴⁺→C³⁺ (RR+DR, provisional Badnell-form)
     'O_II':  (3.4e-13, -0.65), 'O_III': (2.0e-12, -0.65),
     'Ne_II': (2.4e-13, -0.65), 'Ne_III':(1.8e-12, -0.65),
 }
@@ -151,6 +157,14 @@ METAL_LINES = {
                        recomb_parent='C_III', recomb_branch=2.0e-2), # 3p²P°→3s²S (6578+6583)
     'O_I_7774':   dict(ion='O_I',   lam_AA=7773.40, mech='recomb',
                        recomb_parent='O_II', recomb_branch=3.0e-1),  # 3p⁵P→3s⁵S° triplet
+    # C IV 5801/12 doublet (3p²P°→3s²S of Li-like C³⁺) — one of the STRONGEST
+    # optical features of real Icn (SN 2021csp). Recombination-cascade from
+    # He-like C⁴⁺ ('C_V', item 3): at SN temperatures collisional excitation of
+    # the 3p level (~40 eV above ground) is negligible, so the line genuinely
+    # traces n_e·n(C⁴⁺) — i.e. it lights up only where hard (≥392 eV) shock
+    # X-rays maintain C⁴⁺. branch≈0.1 literature-informed, ~factor-2.
+    'C_IV_5801':  dict(ion='C_IV',  lam_AA=5805.0, mech='recomb',
+                       recomb_parent='C_V', recomb_branch=1.0e-1),
 }
 
 # lines that carry an extra channel not captured by the single mechanism above
@@ -171,6 +185,7 @@ METAL_F_LU = {
     'C_II_4267':   0.0,
     'C_II_6580':   0.0,
     'O_I_7774':    0.0,
+    'C_IV_5801':   0.0,
     'O_I_6300':    0.0,
     'O_III_5007':  0.0,
     'Ne_III_3869': 0.0,
@@ -191,6 +206,7 @@ METAL_PRETTY = {
     'O_I_6300':   '[O I] 6300',  'O_III_5007': '[O III] 5007', 'Ne_III_3869': '[Ne III] 3869',
     'C_III_5696': 'C III 5696', 'C_II_4267': 'C II 4267',
     'C_II_6580':  'C II 6580',  'O_I_7774':  'O I 7774',
+    'C_IV_5801':  'C IV 5801/12',
 }
 METAL_COLOR = {'C': '#8c564b', 'O': '#1f77b4', 'Ne': '#9467bd'}   # brown/blue/purple
 

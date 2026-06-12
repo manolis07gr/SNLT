@@ -136,6 +136,28 @@ def compute_metal_ionization(T, n_e, r, rho, R_phot, T_phot,
             g_unit = gamma_unit_rates(ion, T_phot, L_X_brems, T_shock, R_phot)
             gamma_by_ion[ion] = W * g_unit           # per-zone Γ_i(r)
         fracs = ma.ion_ladder_fractions(elem, gamma_by_ion, T, n_e)
+        # --- SELF-SHIELDING for the C³⁺→C⁴⁺ channel (item 3). The simplified
+        # trace ladder uses the UNattenuated radiation field; that is the
+        # validated status quo for the low stages, but for the new C_V stage it
+        # over-ionizes badly: the C³⁺ column itself is optically thick at its own
+        # 64.5 eV edge (τ_self ≫ 1 through a dense CSM), so C⁴⁺ exists only in a
+        # shielded inner skin. Two-pass: first-pass n(C³⁺) → cumulative
+        # τ_self(r) = ∫ σ₀(C_IV) n_C3 dr from the photosphere outward → attenuate
+        # ONLY Γ(C_IV) and re-solve. All other channels keep the pre-item-3
+        # behaviour exactly. (He⁺ shielding would suppress C⁴⁺ further — this is
+        # the conservative upper bound on C_V.)
+        if elem == 'C' and 'C_V' in fracs and 'C_IV' in gamma_by_ion:
+            n_c3 = fracs['C_IV'] * ma.number_density(elem, X, rho)
+            rr = np.asarray(r, float)
+            dr = np.diff(rr, prepend=rr[0])
+            sigma0 = float(ma.ION_DATA['C_IV']['sigma0'])
+            tau_self = np.cumsum(sigma0 * n_c3 * np.maximum(dr, 0.0))
+            gamma_by_ion['C_IV'] = gamma_by_ion['C_IV'] * np.exp(
+                -np.minimum(tau_self, 200.0))
+            fracs = ma.ion_ladder_fractions(elem, gamma_by_ion, T, n_e)
+            if verbose:
+                print(f"[metal_ion] C_V self-shielding: tau_self(64.5eV) "
+                      f"in/out = {tau_self[0]:.2g} / {tau_self[-1]:.2g}")
         n_elem = ma.number_density(elem, X, rho)
         for ion, f in fracs.items():
             out[ion] = f * n_elem
