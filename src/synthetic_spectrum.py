@@ -62,6 +62,53 @@ def assemble(npz_path, lam_min=3500.0, lam_max=9500.0, n=4000,
     return lam_grid, F, used
 
 
+_H = 6.62607015e-27
+_C = 2.99792458e10
+_KB = 1.380649e-16
+
+
+def planck_lambda(lam_AA, T):
+    """B_λ(T) shape on an Å grid (arbitrary normalisation)."""
+    lam = np.asarray(lam_AA, float) * 1e-8           # cm
+    x = _H * _C / (lam * _KB * max(float(T), 1.0))
+    with np.errstate(over='ignore'):
+        B = 1.0 / (lam ** 5 * np.expm1(np.clip(x, 1e-6, 700.0)))
+    return B / np.nanmax(B)
+
+
+def tphot_from_outputs(npz_path):
+    """T_phot for an npz: stored key (new runs) else the sibling _lines.txt
+    header ('# Epoch: ... T_phot: <K>'), else None."""
+    z = np.load(npz_path, allow_pickle=True)
+    if 'T_phot' in z.files:
+        return float(z['T_phot'])
+    import os, re
+    txt = npz_path.replace('_lines.npz', '_lines.txt')
+    if os.path.isfile(txt):
+        for line in open(txt, errors='ignore'):
+            m = re.search(r'T_phot:\s*([\d.eE+]+)', line)
+            if m:
+                return float(m.group(1))
+            if not line.startswith('#'):
+                break
+    return None
+
+
+def assemble_absolute(npz_path, lam_min=3500.0, lam_max=9500.0, n=4000,
+                      T_phot=None, verbose=True):
+    """(lam, F_lambda-shaped) — the line spectrum on the emergent diluted-BB
+    continuum SHAPE at T_phot (normalised; for slope/contrast comparison with
+    observed spectra). T_phot resolved from the npz/txt when not given."""
+    lam, F, used = assemble(npz_path, lam_min, lam_max, n, verbose=verbose)
+    T = T_phot or tphot_from_outputs(npz_path)
+    if not T:
+        raise ValueError(f"T_phot unavailable for {npz_path}; pass T_phot=")
+    Fabs = F * planck_lambda(lam, T)
+    if verbose:
+        print(f"[synth] absolute mode: continuum = B_lambda({T:.0f} K) shape")
+    return lam, Fabs / np.nanmedian(Fabs), used, float(T)
+
+
 def main(argv=None):
     p = argparse.ArgumentParser(description="Assemble synthetic spectrum from a "
                                             "prod_day*_lines.npz")
@@ -69,10 +116,20 @@ def main(argv=None):
     p.add_argument('--lam-min', type=float, default=3500.0)
     p.add_argument('--lam-max', type=float, default=9500.0)
     p.add_argument('--n', type=int, default=4000)
+    p.add_argument('--absolute', action='store_true',
+                   help="multiply by the emergent B_lambda(T_phot) continuum "
+                        "shape (T_phot from the npz, the sibling _lines.txt, or "
+                        "--tphot) — comparable to observed F_lambda spectra.")
+    p.add_argument('--tphot', type=float, default=None)
     p.add_argument('--out', default=None, help=".png plot and/or .txt two-column")
     args = p.parse_args(argv)
 
-    lam, F, used = assemble(args.npz, args.lam_min, args.lam_max, args.n)
+    if args.absolute:
+        lam, F, used, _T = assemble_absolute(args.npz, args.lam_min,
+                                             args.lam_max, args.n,
+                                             T_phot=args.tphot)
+    else:
+        lam, F, used = assemble(args.npz, args.lam_min, args.lam_max, args.n)
     out = args.out or (args.npz.replace('_lines.npz', '_synth.png'))
     if out.endswith('.txt'):
         np.savetxt(out, np.column_stack([lam, F]),

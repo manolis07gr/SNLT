@@ -247,7 +247,7 @@ def run_phase5_for_state(state, snap, n_packets: int = 50000,
 
     # Save outputs if requested
     if out_prefix is not None:
-        _save_phase5_npz(spectra, f"{out_prefix}_lines.npz")
+        _save_phase5_npz(spectra, f"{out_prefix}_lines.npz", state=state)
         _save_phase5_txt(spectra, f"{out_prefix}_lines.txt", state, snap,
                           production_halpha=production_halpha,
                           correction_factor=correction_factor)
@@ -718,11 +718,25 @@ def _validate_state_for_phase5(merged):
 # Output writers
 # ============================================================================
 
-def _save_phase5_npz(spectra: dict, path: str):
-    """Save all per-line arrays to a single .npz."""
+def _save_phase5_npz(spectra: dict, path: str, state=None):
+    """Save all per-line arrays to a single .npz.
+
+    When `state` is given, also stores the photospheric scalars (T_phot,
+    R_phot_cm, L_phot) — additive keys used by synthetic_spectrum's
+    absolute-continuum mode; old npzs simply lack them (loaders check .files).
+    """
     payload = {}
     line_names = list(spectra.keys())
     payload['line_names'] = np.array(line_names)
+    if state is not None:
+        for attr, key in (('T_phot', 'T_phot'), ('R_phot_cm', 'R_phot_cm'),
+                          ('R_phot', 'R_phot_cm'), ('L_phot', 'L_phot')):
+            v = getattr(state, attr, None)
+            if v is not None and key not in payload:
+                try:
+                    payload[key] = float(v)
+                except Exception:
+                    pass
     for name in line_names:
         sp = spectra[name]
         payload[f"{name}__lambda"]      = sp['lambda_AA']
