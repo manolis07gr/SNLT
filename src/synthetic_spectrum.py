@@ -29,8 +29,22 @@ import sys
 import numpy as np
 
 
+def _convolve_resolution(lam, F, R):
+    """Convolve to instrumental resolution R (Gaussian sigma_lam = lam/R/2.355;
+    evaluated at the grid centre — fine for our factor-few windows)."""
+    lam = np.asarray(lam, float); F = np.asarray(F, float)
+    if not R or R <= 0 or lam.size < 5:
+        return F
+    dlam = float(lam[1] - lam[0])
+    sig = float(np.median(lam)) / float(R) / 2.355
+    half = int(max(3, np.ceil(4 * sig / dlam)))
+    kx = np.arange(-half, half + 1) * dlam
+    g = np.exp(-0.5 * (kx / sig) ** 2); g /= g.sum()
+    return np.convolve(F, g, mode='same')
+
+
 def assemble(npz_path, lam_min=3500.0, lam_max=9500.0, n=4000,
-             skip_lines=(), verbose=True):
+             skip_lines=(), resolution=None, verbose=True):
     """Return (lam_grid_AA, F_over_Fcont, contributing_line_names)."""
     z = np.load(npz_path, allow_pickle=True)
     names = [str(x) for x in z['line_names']]
@@ -56,6 +70,8 @@ def assemble(npz_path, lam_min=3500.0, lam_max=9500.0, n=4000,
         # add this line's excess on the common grid (0 outside its own window)
         F += np.interp(lam_grid, lam, Fn - 1.0, left=0.0, right=0.0)
         used.append(nme)
+    if resolution:
+        F = _convolve_resolution(lam_grid, F, resolution)
     if verbose:
         print(f"[synth] {npz_path}: {len(used)} lines contribute in "
               f"[{lam_min:.0f},{lam_max:.0f}] AA: {', '.join(used)}")
@@ -95,11 +111,12 @@ def tphot_from_outputs(npz_path):
 
 
 def assemble_absolute(npz_path, lam_min=3500.0, lam_max=9500.0, n=4000,
-                      T_phot=None, verbose=True):
+                      T_phot=None, resolution=None, verbose=True):
     """(lam, F_lambda-shaped) — the line spectrum on the emergent diluted-BB
     continuum SHAPE at T_phot (normalised; for slope/contrast comparison with
     observed spectra). T_phot resolved from the npz/txt when not given."""
-    lam, F, used = assemble(npz_path, lam_min, lam_max, n, verbose=verbose)
+    lam, F, used = assemble(npz_path, lam_min, lam_max, n,
+                            resolution=resolution, verbose=verbose)
     T = T_phot or tphot_from_outputs(npz_path)
     if not T:
         raise ValueError(f"T_phot unavailable for {npz_path}; pass T_phot=")
@@ -121,15 +138,20 @@ def main(argv=None):
                         "shape (T_phot from the npz, the sibling _lines.txt, or "
                         "--tphot) — comparable to observed F_lambda spectra.")
     p.add_argument('--tphot', type=float, default=None)
+    p.add_argument('--resolution', type=float, default=None,
+                   help="convolve to instrumental resolution R=lam/dlam "
+                        "(e.g. 120 for SEDM classification spectra)")
     p.add_argument('--out', default=None, help=".png plot and/or .txt two-column")
     args = p.parse_args(argv)
 
     if args.absolute:
         lam, F, used, _T = assemble_absolute(args.npz, args.lam_min,
                                              args.lam_max, args.n,
-                                             T_phot=args.tphot)
+                                             T_phot=args.tphot,
+                                             resolution=args.resolution)
     else:
-        lam, F, used = assemble(args.npz, args.lam_min, args.lam_max, args.n)
+        lam, F, used = assemble(args.npz, args.lam_min, args.lam_max, args.n,
+                                resolution=args.resolution)
     out = args.out or (args.npz.replace('_lines.npz', '_synth.png'))
     if out.endswith('.txt'):
         np.savetxt(out, np.column_stack([lam, F]),
