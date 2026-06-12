@@ -49,6 +49,7 @@ def run_phase5_for_state(state, snap, n_packets: int = 50000,
                           he_budget: bool = False,
                           metal_lines: bool = False,
                           metal_cloudy: bool = False,
+                          narrow_csm: bool = False,
                           verbose: bool = True) -> dict:
     """Run Phase 5 (multi-line MC) on a state populated by Phases 3 + 4.
 
@@ -221,7 +222,8 @@ def run_phase5_for_state(state, snap, n_packets: int = 50000,
         try:
             import metal_lines as _ml
             metal_spectra, _metal_ions = _ml.compute_metal_lines(
-                merged, snap=snap, use_cloudy=metal_cloudy, verbose=verbose)
+                merged, snap=snap, use_cloudy=metal_cloudy,
+                narrow_csm=narrow_csm, verbose=verbose)
             for _name, _sp in metal_spectra.items():
                 spectra[_name] = _sp
             if metal_spectra and out_prefix is not None and make_png:

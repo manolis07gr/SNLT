@@ -318,7 +318,8 @@ def _composition(state, key):
 def compute_metal_lines(state, snap=None, win_kms: float = 5000.0,
                         n_pix: int = 501, smooth_kms: float = 25.0,
                         mc_profile: bool = True, n_packets_mc: int = 50000,
-                        use_cloudy: bool = False, verbose: bool = True):
+                        use_cloudy: bool = False, narrow_csm: bool = False,
+                        verbose: bool = True):
     """Compute spectra entries for all C/O/Ne metal lines.
 
     Returns (spectra, ions) where `spectra` is {line_name: dict(...)} and `ions`
@@ -406,6 +407,33 @@ def compute_metal_lines(state, snap=None, win_kms: float = 5000.0,
 
     dV = _shell_volumes(r)
     v_kms = np.abs(v) / 1e5
+
+    # ---- GLOBAL unshocked-CSM wind velocity (for the narrow-CSM component).
+    # The narrow P-Cygni core forms in the slow wind AHEAD of the shock — i.e.
+    # the OUTERMOST zones of the (photosphere-truncated) state, not the fast
+    # swept-up shell where most line emission concentrates. A per-line
+    # emission-weighted estimate picks the shell (8000-9000 km/s) and produces a
+    # "narrow" core as broad as the line; the outer-zone median recovers the true
+    # wind (~1000 km/s C-series, ~200 km/s A/B). Computed once for all lines.
+    v_wind_global = 0.0
+    if narrow_csm and r.size > 4:
+        n_out = max(3, int(0.10 * r.size))           # outer 10% of zones
+        v_out = v_kms[np.argsort(r)[-n_out:]]
+        v_out = v_out[np.isfinite(v_out) & (v_out > 0)]
+        if v_out.size:
+            v_wind_global = float(np.median(v_out))
+        # PHYSICAL GATE: a narrow CSM core exists only while there IS slow
+        # unshocked wind ahead of the shock. If the outer zones are fast
+        # (no-CSM models: free homologous ejecta; post-sweep epochs: the CSM is
+        # fully shocked), there is no slow wind and no narrow component — which
+        # matches observations (IIn/Icn narrow lines disappear once the CSM is
+        # swept). 3500 km/s covers the fastest known Icn winds (~3000 km/s).
+        if v_wind_global > 3500.0:
+            if verbose:
+                print(f"[metal] narrow-CSM: outer zones fast "
+                      f"({v_wind_global:.0f} km/s > 3500) — no unshocked slow "
+                      f"wind (no-CSM or post-sweep); narrow component skipped.")
+            v_wind_global = 0.0
 
     # ---- Tier-2: Cloudy absolute line luminosities (self-consistent
     #      photoionization + NLTE + resonance-line RT) AND per-zone emissivity.
@@ -568,6 +596,45 @@ def compute_metal_lines(state, snap=None, win_kms: float = 5000.0,
                                                   T_phot, tau_es)
             except Exception:
                 pass
+        # ---- narrow-CSM component (Stage 1, OPT-IN; default off = byte-identical).
+        # The unshocked slow CSM ahead of the shock produces the narrow/intermediate
+        # P-Cygni core seen in real Icn/IIn. We REDISTRIBUTE a fraction f_n of the
+        # line's EMISSION from the broad interaction shell into a narrow core at the
+        # wind velocity (area-conserving → total emission and L_line unchanged), and
+        # for resonance lines overlay a blue absorption trough (net P-Cygni). The
+        # ABSOLUTE L_line is never touched (it is computed independently above); only
+        # the profile SHAPE (and, for resonance lines, the net EW) changes.
+        narrow_v_wind = float('nan')
+        if narrow_csm:
+            try:
+                import csm_narrow_profile as _cn
+                v_grid = (lam_grid / lam0 - 1.0) * C_KMS
+                dl = float(lam_grid[1] - lam_grid[0]) if lam_grid.size > 1 else 1.0
+                narrow_v_wind = v_wind_global   # outer-zone (unshocked CSM) wind
+                E = F_norm - 1.0
+                Epos = np.clip(E, 0.0, None)
+                area = float(np.sum(Epos) * dl)
+                if narrow_v_wind > 0 and area > 0:
+                    f_n = 0.35                       # emission fraction in narrow core
+                    core = _cn.narrow_csm_component(v_grid, narrow_v_wind,
+                                                    amp_em=1.0, depth_abs=0.0)
+                    ca = float(np.sum(np.clip(core, 0.0, None)) * dl)
+                    if ca > 0:
+                        core = core * (area / ca)    # SAME total area as broad emission
+                        # redistribute: (1-f_n) broad + f_n narrow, keep below-cont parts
+                        E_new = (1.0 - f_n) * Epos + f_n * core + (E - Epos)
+                        if flu > 1e-4:               # resonance -> blue P-Cygni trough
+                            depth = float(np.clip(1.0 - resonance_beta_med, 0.0, 0.5))
+                            if depth > 0:
+                                E_new = E_new + _cn.narrow_csm_component(
+                                    v_grid, narrow_v_wind, amp_em=0.0, depth_abs=depth)
+                        F_norm = 1.0 + E_new
+                        if verbose:
+                            print(f"[metal] narrow-CSM applied to {name}: "
+                                  f"v_wind={narrow_v_wind:.0f} km/s, f_n={f_n}")
+            except Exception as _e:
+                if verbose:
+                    print(f"[metal] narrow-CSM skipped for {name}: {_e}")
         # continuum-suppression flags (continuum-only criteria): when the band
         # continuum is Wien-negligible (UV line at a cold photosphere, e.g.
         # C IV 1549 @ 3387 K) the F_norm/EW are meaningless — quote L_line.
@@ -607,6 +674,7 @@ def compute_metal_lines(state, snap=None, win_kms: float = 5000.0,
             v_shell_emit_kms=v_shell_emit,
             v_prof_hwhm_kms=v_prof_hwhm,
             width_ratio=width_ratio, width_ok=width_ok,
+            narrow_csm=bool(narrow_csm), narrow_v_wind_kms=narrow_v_wind,
             # metal lines are first-principles (no anchor/correction):
             L_line_corrected=L_line, EW_corrected=EW_out,
             F_norm_corrected=F_norm.copy(),

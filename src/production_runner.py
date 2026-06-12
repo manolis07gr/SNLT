@@ -702,6 +702,7 @@ def process_snapshot(snap_path, n_per=100_000, n_chunks=2,
                       he_budget=False,
                       metal_lines=False,
                       metal_cloudy=False,
+                      narrow_csm=False,
                       verbose=True):
     """Full processing for one snapshot. Returns result dict.
 
@@ -1447,6 +1448,7 @@ def process_snapshot(snap_path, n_per=100_000, n_chunks=2,
                 he_budget=he_budget,
                 metal_lines=metal_lines,
                 metal_cloudy=metal_cloudy,
+                narrow_csm=narrow_csm,
                 verbose=True)
             result['he_spectra_summary'] = {
                 ln: {'L_line': float(sp['L_line']),
@@ -2371,6 +2373,7 @@ def process_batch(snap_paths, args):
                 he_budget=args.he_budget,
                 metal_lines=args.metal_lines,
                 metal_cloudy=args.metal_cloudy,
+                narrow_csm=getattr(args, 'narrow_csm', False),
                 verbose=True,
             )
             results.append(r)
@@ -3201,6 +3204,14 @@ def main():
                              'cloudy.exe); falls back to CHIANTI/provisional per '
                              'line if Cloudy is absent or a run does not converge. '
                              'Implies --metal-lines.')
+    parser.add_argument('--narrow-csm', action='store_true',
+                        help='Add the narrow/intermediate P-Cygni component from '
+                             'the unshocked slow CSM to the METAL line profiles '
+                             '(for Icn/IIn fidelity vs observed spectra). DEFAULT '
+                             'OFF — when off, output is byte-identical to before. '
+                             'Reshapes only the metal F_norm profiles (and the '
+                             'resonance-line net EW); L_line absolutes and the H/He '
+                             'lines are never touched.')
     parser.add_argument('--he-budget', action='store_true',
                         help='Phase 5b (P1 #4): composition-general continuum '
                              'guard + He-budget diagnostics. Detects the '
@@ -3407,6 +3418,7 @@ def main():
             he_budget=args.he_budget,
             metal_lines=args.metal_lines,
             metal_cloudy=args.metal_cloudy,
+            narrow_csm=getattr(args, 'narrow_csm', False),
             verbose=True,
         )
 
