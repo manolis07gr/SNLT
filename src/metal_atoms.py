@@ -130,6 +130,27 @@ METAL_LINES = {
     'Ne_III_3869':dict(ion='Ne_III',lam_AA=3868.76, mech='cel',   # [Ne III] 1D2 → 3P2
                        Omega=(1.40, 0.10), g_l=9, g_u=5, dE_eV=3.204,
                        A_ul=0.234, branch=0.74),              # n_crit ~ 9.7e6 cm⁻³
+    # --- Stage-2 optical lines (P2 #7): the diagnostic features real Icn show
+    # (SN 2019hgp / 2021csp: C III 5696, C II 4267/6580, O I 7773) that the
+    # 6-line v1 set lacked. ALL are recombination-cascade lines: emitted by the
+    # ion shown, POPULATED by recombination of `recomb_parent` (one stage up),
+    # α_eff = recomb_branch · α_tot(parent,T) — same physically-bounded scheme as
+    # C_III_4647. Branch values are literature-informed (PPB91-consistent,
+    # ~factor-2): C II 4267 is anchored to the classic α_eff≈1.6e-13 cm³/s
+    # (branch=α_eff/α_tot(C_III)≈0.07). Cloudy's light-element model atoms emit
+    # ~0 for these ORLs (verified: C III 5696 absent from its line stack), so the
+    # recomb channel is authoritative here. NOTE: C IV 5801/12 is DEFERRED — it
+    # recombines from C⁴⁺ ('C_V'), which is not in the ion ladder; adding that
+    # stage would redistribute the existing C_IV fractions (breaks the
+    # backwards-compat gate) and needs its own gated change.
+    'C_III_5696': dict(ion='C_III', lam_AA=5695.92, mech='recomb',
+                       recomb_parent='C_IV', recomb_branch=8.0e-3),  # 3d¹D→3p¹P°
+    'C_II_4267':  dict(ion='C_II',  lam_AA=4267.00, mech='recomb',
+                       recomb_parent='C_III', recomb_branch=7.0e-2), # 3d²D→3p²P° (classic ORL)
+    'C_II_6580':  dict(ion='C_II',  lam_AA=6580.00, mech='recomb',
+                       recomb_parent='C_III', recomb_branch=2.0e-2), # 3p²P°→3s²S (6578+6583)
+    'O_I_7774':   dict(ion='O_I',   lam_AA=7773.40, mech='recomb',
+                       recomb_parent='O_II', recomb_branch=3.0e-1),  # 3p⁵P→3s⁵S° triplet
 }
 
 # lines that carry an extra channel not captured by the single mechanism above
@@ -146,6 +167,10 @@ METAL_F_LU = {
     'C_IV_1549':   0.286,
     'C_III_1909':  5.4e-7,
     'C_III_4647':  0.0,
+    'C_III_5696':  0.0,
+    'C_II_4267':   0.0,
+    'C_II_6580':   0.0,
+    'O_I_7774':    0.0,
     'O_I_6300':    0.0,
     'O_III_5007':  0.0,
     'Ne_III_3869': 0.0,
@@ -164,6 +189,8 @@ METAL_LINES_AA = {name: d['lam_AA'] for name, d in METAL_LINES.items()}
 METAL_PRETTY = {
     'C_IV_1549':  'C IV 1549',  'C_III_1909': 'C III] 1909', 'C_III_4647': 'C III 4647',
     'O_I_6300':   '[O I] 6300',  'O_III_5007': '[O III] 5007', 'Ne_III_3869': '[Ne III] 3869',
+    'C_III_5696': 'C III 5696', 'C_II_4267': 'C II 4267',
+    'C_II_6580':  'C II 6580',  'O_I_7774':  'O I 7774',
 }
 METAL_COLOR = {'C': '#8c564b', 'O': '#1f77b4', 'Ne': '#9467bd'}   # brown/blue/purple
 

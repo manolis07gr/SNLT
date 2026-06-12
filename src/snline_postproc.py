@@ -53,7 +53,8 @@ HE_II = ["He_II_1640", "He_II_3203", "He_II_4686", "He_II_10124"]
 # P2 #5 metal lines (C/O/Ne). Present only when run with --metal-lines; all
 # post-processing reads line_names dynamically, so these are for grouping/colour.
 METAL = ["C_IV_1549", "C_III_1909", "C_III_4647",
-         "O_I_6300", "O_III_5007", "Ne_III_3869"]
+         "O_I_6300", "O_III_5007", "Ne_III_3869",
+         "C_III_5696", "C_II_4267", "C_II_6580", "O_I_7774"]
 
 # Pretty labels for axes / legends
 PRETTY = {
@@ -66,6 +67,8 @@ PRETTY = {
     "C_IV_1549": "C IV 1549", "C_III_1909": "C III] 1909",
     "C_III_4647": "C III 4647", "O_I_6300": "[O I] 6300",
     "O_III_5007": "[O III] 5007", "Ne_III_3869": "[Ne III] 3869",
+    "C_III_5696": "C III 5696", "C_II_4267": "C II 4267",
+    "C_II_6580": "C II 6580", "O_I_7774": "O I 7774",
 }
 
 # A consistent, color-blind-friendly palette keyed by line
@@ -80,6 +83,8 @@ LINE_COLOR = {
     "C_IV_1549": "#8c564b", "C_III_1909": "#a0522d", "C_III_4647": "#654321",
     "O_I_6300": "#1f77b4", "O_III_5007": "#2a9df4",
     "Ne_III_3869": "#9467bd",
+    "C_III_5696": "#b08968", "C_II_4267": "#7a4419",
+    "C_II_6580": "#c8956c", "O_I_7774": "#4a90d9",
 }
 
 
