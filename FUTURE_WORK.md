@@ -233,7 +233,11 @@ spectrum overplottable on observations. Full opacity-expansion synthesis (needed
 only for the IIn Fe II forest) stays a separate future project.
 *Staged plan (each gated, backwards-compat enforced — existing IIP/IIn/Ibn/Icn
 line results must be unchanged when new features are OFF):*
-- **Stage 1 — narrow-CSM P-Cygni profile.  ✅ done (component-validated).**
+- **Stage 1 — narrow-CSM P-Cygni profile.  ✅ INTEGRATED + VALIDATED (commit 9171343).**
+  `--narrow-csm` (default OFF = byte-identical). Narrow core at the outer-zone
+  wind velocity, resonance blue trough, area-conserving (L unchanged), physical
+  skip when no slow wind exists (no-CSM / post-sweep). 3-round regression gate
+  passed (C4/A1/A4).
   `csm_narrow_profile.py`: additive narrow component (flat-top emission at
   v_wind; resonance lines get a sub-continuum blue trough via exp(-τ) continuum
   attenuation; forbidden lines pure emission). Off-state = exactly zero. Unit

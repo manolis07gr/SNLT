@@ -14,8 +14,7 @@ handover), `FUTURE_WORK.md` (staged plan, esp. **P2 #7**), `GETTING_STARTED.md`.
   (predicted ≳2 M⊙; truth M_csm=5.0)**, **energetic (predicted elevated; truth
   E=2.0)**, fast dense CSM (truth v_csm=3000). Strong end-to-end validation.
 - **Now executing the optical line-list upgrade** (FUTURE_WORK P2 #7), gated,
-  backwards-compat-enforced. **Stage 1 (narrow-CSM profile) integrated; its
-  backwards-compat regression is RUNNING.**
+  backwards-compat-enforced. **ALL FOUR STAGES DONE: Stage 1 narrow-CSM (9171343), Stage 2 optical lines (982b329), Stage 3 folded, Stage 4 synthetic_spectrum.py + obs comparison. Deferred: C IV 5801 (C_V stage), Mg II, optional full-grid regen with new physics.**
 
 ## Validated physics shipped this session (do not regress)
 Smooth shock-X-ray escape gate (binary→`exp(-τ)`, killed the metal breakout
