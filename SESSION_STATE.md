@@ -6,15 +6,17 @@ handover), `FUTURE_WORK.md` (staged plan, esp. **P2 #7**), `GETTING_STARTED.md`.
 
 ## TL;DR — where we are
 - Branch **`p0-p1-physics`** (== `main`), all code committed + pushed.
-- **Two production grids DONE & analyzed:** the original 15 models, then the
-  expanded **39-model grid + GO1** (blind test). Outputs in `analysis/` and
-  `analysis_full/`.
-- **GO1 blind test PASSED:** from line profiles alone the pipeline called it a
-  Type **Icn** (H-free, C III]/C IV carbon-dominated, He-bearing), **massive CSM
-  (predicted ≳2 M⊙; truth M_csm=5.0)**, **energetic (predicted elevated; truth
-  E=2.0)**, fast dense CSM (truth v_csm=3000). Strong end-to-end validation.
-- **Now executing the optical line-list upgrade** (FUTURE_WORK P2 #7), gated,
-  backwards-compat-enforced. **ALL FOUR STAGES DONE: Stage 1 narrow-CSM (9171343), Stage 2 optical lines (982b329), Stage 3 folded, Stage 4 synthetic_spectrum.py + obs comparison. Deferred: C IV 5801 (C_V stage), Mg II, optional full-grid regen with new physics.**
+- **OPTICAL LINE-LIST UPGRADE COMPLETE (P2 #7, items 1-5).** Final 40-model
+  production grid re-run with full physics (25 lines + narrow-CSM + C_V), 0
+  readLaw, analyzed -> `analysis_final2/`. Final real-Icn comparison:
+  `obs_comparison/synthetic_vs_real_icn_final.png`.
+- **Key result:** the 4 new optical C lines + C IV 5801 are in every model-epoch
+  ranking; C II 4267 dominant in 20 late C-series epochs. Continuum slope + the
+  5800/6600-7100 feature complexes match real Icn; C III 4650 contrast is the
+  known remaining gap (4647 branch factor-2 -> PPB91 drop-in).
+- Two earlier 40-model grids in `analysis/` + `analysis_full/` are the prior
+  (19-line) datasets; `analysis_final2/` is the authoritative current one.
+
 
 ## Validated physics shipped this session (do not regress)
 Smooth shock-X-ray escape gate (binary→`exp(-τ)`, killed the metal breakout

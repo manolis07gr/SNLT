@@ -283,3 +283,40 @@ error bars instead of bare points.
 interaction / transition / nebular phase boundaries (from `L_cont_band`,
 `tau_es`, `R_phot` trends) so the post-processing can truncate automatically
 rather than by hand.
+
+---
+
+## P2 #7 — Optical line-list upgrade + Icn synthetic spectra — ✅ COMPLETE (2026-06-13)
+
+All five tightening items done, gated, committed; final 40-model production grid
+(re)run with the full physics and analyzed.
+
+- **Item 1** absolute-continuum synthetic spectra (B_λ(T_phot) shape) — c00f2a7.
+- **Item 2** right-model comparison (GO1/C7/C11): continuum slopes match real Icn.
+- **Item 3** C_V ladder stage + C IV 5801/12 with **self-shielded** C³⁺→C⁴⁺
+  ionization (τ_self 0→2200 through the CSM; C⁴⁺ 0.80→0.0026; existing 23 lines
+  shifted ≤1.0%) — f90c8f8.
+- **Item 4** emission-measure narrow fraction (emergent f_n: C IV 1549 0.65
+  in-wind / C III] 0.05 shell; L conserved exactly) + relative wind gate
+  (embedded-CSM aware) — 41ae1d5.
+- **Item 5** T_phot of the Icn comparators (GO1/C7/C11) = 20.3–22.7 kK, squarely
+  in the real 15–25 kK range → **no He-opacity root-fix needed** for the Icn
+  comparison (the cool-photosphere worry was a low-CSM C4 artifact). + R=120
+  instrumental convolution (92c5af3).
+- **Final grid:** 40/40 models, production complete, 0 readLaw (dlaw fix holds),
+  analysis in `analysis_final2/`. The 4 new optical C lines + C IV 5801 are in
+  all 1101 model-epoch rankings; **C II 4267 is the #1 dominant feature in 20
+  late C-series epochs**, O I 7774 in 3 — the optical carbon forest the v1 set
+  lacked now drives the late Icn spectra. PCA stable: PC1 80.9%, structure-
+  dominated (R_prog −0.98, f_Herich +0.94).
+
+**Remaining honest gaps (next work):**
+- **C III 4650 contrast gap:** the synthetic 4647 bump is ~0.9× continuum vs the
+  real ~1.5–2×. Prime cause: the C III 4647 recomb **branch (2e-2) is factor-2
+  low** — drop in the exact Pequignot+1991 V1 effective coefficient. (The
+  5696/5876 complex already matches at 1.59× vs real 1.5–2×.)
+- **Narrow-component absolute** (f_n redistribution) is shape-validated but its
+  luminosity is **not yet validated against observed narrow-line fluxes**.
+- **C_V self-shielding** is a conservative upper bound (He⁺ shielding would lower
+  C⁴⁺ further) — refine if C IV 5801 becomes a quantitative diagnostic.
+- Fe-group line blanketing (blue, IIn) remains out of scope.

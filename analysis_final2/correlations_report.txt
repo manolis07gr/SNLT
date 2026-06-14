@@ -1,0 +1,54 @@
+======================================================================
+ SNLT line / parameter-space analysis
+======================================================================
+ models: ['A1', 'A4', 'A5', 'A6', 'A7', 'A8', 'A9', 'A10', 'A11', 'A12', 'A13', 'A14', 'A15', 'B1', 'B4', 'B5', 'B6', 'B7', 'B8', 'B9', 'B10', 'B11', 'B12', 'B13', 'B14', 'B15', 'C1', 'C4', 'C5', 'C6', 'C7', 'C8', 'C9', 'C10', 'C11', 'C12', 'C13', 'C14', 'C15']
+ (H-line stats use the 26 H-bearing models)
+
+STRONGEST PEARSON CORRELATIONS (|r|):
+   L_He1            vs f_Herich          r = +0.739
+   L_He1            vs E_SN              r = +0.695
+   L_He1            vs R_prog            r = -0.692
+   L_He_tot         vs f_Herich          r = +0.638
+   L_He1            vs M_ej              r = -0.617
+   EW_Halpha        vs E_SN              r = +0.615
+   L_He_tot         vs R_prog            r = -0.598
+   L_He_tot         vs E_SN              r = +0.574
+   He1_He2          vs f_Herich          r = -0.573
+   L_He_tot         vs M_ej              r = -0.537
+   L_He1            vs M_csm_over_Mej    r = +0.430
+   L_Halpha         vs M_csm             r = +0.396
+
+PCA ON LINE-PROPERTY BLOCK (standardised; L,EW in log10):
+   explained variance: PC1=80.9%, PC2=10.6%, PC3=7.1%, PC4=1.0%
+
+   PC1 loadings (which line properties define it):
+      L_Halpha         -0.347
+      L_Balmer_tot     -0.347
+      L_Hgamma         -0.347
+      L_Hbeta          -0.347
+      Halpha_Hbeta     -0.346
+      Halpha_Hgamma    -0.346
+      EW_Halpha        -0.330
+      L_He_tot         +0.286
+      L_He1            +0.265
+      He1_He2          -0.132
+
+   PC1 correlation with physical parameters:
+      R_prog           r(PC1) = -0.979
+      f_Herich         r(PC1) = +0.940
+      M_ej             r(PC1) = -0.880
+      M_csm_over_Mej   r(PC1) = +0.641
+      E_SN             r(PC1) = +0.480
+      M_csm            r(PC1) = +0.033
+      f_Hrich          r(PC1) = +0.015
+
+   Best linear predictor  PC1 ~ physical params  (R²=0.992):
+      intercept        +0.000
+      M_csm            +0.098
+      M_ej             +0.750
+      M_csm_over_Mej   +0.071
+      E_SN             +0.340
+      R_prog           -3.262
+      f_Hrich          -0.093
+      f_Herich         +0.082
+   -> line behaviour is driven mainly by: R_prog, M_ej
