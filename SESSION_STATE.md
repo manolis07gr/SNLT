@@ -16,6 +16,12 @@ handover), `FUTURE_WORK.md` (staged plan, esp. **P2 #7**), `GETTING_STARTED.md`.
   known remaining gap (4647 branch factor-2 -> PPB91 drop-in).
 - Two earlier 40-model grids in `analysis/` + `analysis_full/` are the prior
   (19-line) datasets; `analysis_final2/` is the authoritative current one.
+- **Post-grid refinements (commit 7eda25f):** C III 4647 PPB91 coeff correction
+  (alpha_eff 2.4e-13, tested, x2.40 no regression) + `validate_narrow_flux.py`.
+  MEASURED that the optical C III/C IV WC-like feature absolutes are ~100-300x
+  below observed (real EW 19-83 AA vs model ~0.1-1 AA) — a FORMATION-physics gap,
+  now **FUTURE_WORK P2 #8** (root-caused; fix = extend Cloudy emissivity-weighting
+  to the optical ORLs). Resonance lines (Cloudy-anchored) remain trustworthy.
 
 
 ## Validated physics shipped this session (do not regress)

@@ -320,3 +320,43 @@ All five tightening items done, gated, committed; final 40-model production grid
 - **C_V self-shielding** is a conservative upper bound (He⁺ shielding would lower
   C⁴⁺ further) — refine if C IV 5801 becomes a quantitative diagnostic.
 - Fe-group line blanketing (blue, IIn) remains out of scope.
+
+---
+
+## P2 #8 — Optical C III/C IV WC-like feature absolutes (the real λ4650 gap)
+
+**Status: ROOT-CAUSED, open.** The single highest-leverage remaining gap for the
+Icn synthetic-spectrum match.
+
+**The gap (measured, GO1 day3/5):** the observed WC-like optical carbon features
+are strong — real EW ≈ 19–83 Å at λ4650, 17–30 Å at λ5696, 11–39 Å at λ5801
+(SN 2019hgp / 2021csp) — but our synthetic optical C III/C IV recombination lines
+are ~100–600× too faint (C III 4647 EW ≈ 0.14 Å; C III 5696, C IV 5801 ≈ 0).
+
+**Root cause (NOT a coefficient):** with C³⁺ abundant (0.86) and the full CSM
+integrated, the deficit is intrinsic to treating these as simple ORLs. The parent
+ion (C³⁺ for λ4650, needs hot/ionized gas) and the n_e² emission-measure boost
+(needs cool/dense gas) anti-correlate, so a pure recombination emissivity
+n_e·n(C³⁺)·α_eff stays faint. The PPB91 effective-coefficient correction
+(branch 0.02→0.048, α_eff 2.4e-13; commit 7eda25f) is *correct* but closes only
+2.4× of the ~300× gap. The narrow-CSM component inherits the same deficit for the
+ORLs (validated in `validate_narrow_flux.py`); only the resonance lines
+(C IV 1549, C III] 1909) — which take Cloudy's resonance-line-RT absolute — are on
+a trustworthy optical-adjacent scale.
+
+**Proper fixes (pick one):**
+1. **Extend Cloudy emissivity-weighting to the optical ORLs.** Tier-2 already
+   parses Cloudy `save line emissivity` for the resonance lines (MC shape) and
+   `save line list` for resonance absolutes. Add C III 4647/5696 + C IV 5801 to
+   the Cloudy line list so their ABSOLUTES come from Cloudy's full C III/C IV
+   model atom (which carries the low-T dielectronic + cascade physics our
+   provisional α_eff lacks) instead of metal_atoms. Lowest-effort, reuses the
+   existing Cloudy plumbing; gated like the resonance lines (energy ceiling +
+   CHIANTI fallback).
+2. **CMFGEN-class C III/C IV model-atom recombination + LTDR data** dropped into
+   metal_atoms (highest fidelity, most work).
+
+Until then: quote the resonance-line carbon diagnostics (C IV 1549, C III] 1909)
+and the He/H lines as quantitative; treat the optical C III/C IV ORL *absolutes*
+as lower limits (shapes/fractions are right). Items 1 (coeff) + 2 (narrow-flux
+validation) of the P2 #7 tightening are DONE; this is the surviving open item.
