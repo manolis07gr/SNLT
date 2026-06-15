@@ -123,8 +123,20 @@ METAL_LINES = {
     # physically and gives the correct T-dependence. branch≈0.02 is a literature-
     # informed estimate (PPB91-consistent, ~factor-2 uncertain) — drop in the exact
     # Pequignot+1991 V1 effective coefficient here to remove that residual.
+    # branch tuned so alpha_eff(10^4 K) = recomb_branch * alpha_tot(C_IV) =
+    # 0.048 * 5.0e-12 = 2.4e-13 cm^3/s — the C III V1 (lambda 4647-50-51)
+    # effective recombination coefficient in the PPB91 / Davey-Storey-Kisielius
+    # range (~1.5x the C II 4267 ORL at 1.6e-13, consistent with PN/WC
+    # observations). Was 2.0e-2 (1.0e-13, factor ~2 low). NOTE (measured, GO1):
+    # this 2.4x correction is necessary but NOT sufficient to match the observed
+    # WC-like lambda 4650 feature (real 1.8-2.2x continuum vs our ~1.001x): with
+    # C^3+ abundant (0.86) and the full CSM integrated, the optical ORL is still
+    # ~250x too faint. Root cause is FORMATION physics, not the coefficient — the
+    # parent C^3+ (hot gas) and the n_e^2 boost (cool dense gas) anti-correlate,
+    # and the real feature needs full C III/C IV model-atom recombination +
+    # low-T dielectronic data (CMFGEN-class). See FUTURE_WORK.
     'C_III_4647': dict(ion='C_III', lam_AA=4647.42, mech='recomb',
-                       recomb_parent='C_IV', recomb_branch=2.0e-2),
+                       recomb_parent='C_IV', recomb_branch=4.8e-2),
     # --- Oxygen ---
     'O_I_6300':   dict(ion='O_I',   lam_AA=6300.30, mech='cel',   # [O I] 1D2 → 3P2
                        Omega=(0.27, 0.10), g_l=9, g_u=5, dE_eV=1.967,
