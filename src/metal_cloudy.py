@@ -68,7 +68,12 @@ L_MAX_FRAC = 0.1
 CLOUDY_LINES = {
     'C_IV_1549':   ['C  4 1548.19A', 'C  4 1550.77A'],   # resonance doublet
     'C_III_1909':  ['C  3 1906.68A', 'C  3 1908.73A'],   # intercombination pair
-    'C_III_4647':  ['C  3 4647.42A'],                    # recombination (best-guess label)
+    # C III V1 multiplet (lambda 4647-50-51): Cloudy emits it at 4650.25 (the
+    # 4647.42 label is a phantom — Cloudy has no transition there, returns 0).
+    # P2 #8: take the ABSOLUTE from Cloudy's full C III model atom (carries the
+    # low-T dielectronic + cascade physics our provisional alpha_eff lacks).
+    'C_III_4647':  ['C  3 4650.25A', 'C  3 4651.47A'],
+    'C_IV_5801':   ['C  4 5801.31A', 'C  4 5811.97A'],   # Li-like C IV doublet (P2 #8)
     'O_I_6300':    ['O  1 6300.30A'],                    # [O I]
     'O_III_5007':  ['O  3 5006.84A'],                    # [O III]
     'Ne_III_3869': ['Ne 3 3868.76A'],                    # [Ne III]

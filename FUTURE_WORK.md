@@ -325,7 +325,24 @@ All five tightening items done, gated, committed; final 40-model production grid
 
 ## P2 #8 — Optical C III/C IV WC-like feature absolutes (the real λ4650 gap)
 
-**Status: ROOT-CAUSED, open.** The single highest-leverage remaining gap for the
+**Status: ✅ RESOLVED for C III 4650 (2026-06-18). C IV 5801 remains weak.**
+
+**Fix:** the existing Cloudy request used a PHANTOM label `C 3 4647.42A` (=0 in
+Cloudy — no transition there); the real V1-multiplet emission is at `4650.25A`.
+Fixed the label + routed the optical ORL ABSOLUTES through Cloudy's full C III/
+C IV model atom (`_CLOUDY_ORL` in metal_lines; energy ceiling + provisional
+fallback retained). **Result (GO1):** C III 4650 L 5.5e38→5.43e40 (×100), EW
+−0.06→−5.54 Å (day3) / −3.19 Å (day5, stable); the synthetic λ4650 F/F_cont
+contrast went ~1.0→**1.55–1.66** vs the real **1.8–2.2** — gap closed from ~300×
+to within ~20%. No regression (only C III 4647 + C IV 5801 changed; ΔL/L=0 for
+all else). **C IV 5801** stays weak even from Cloudy's atom (L 1.9e36, EW ~0) —
+its Li-like recombination needs the C⁴⁺ (C_V) parent that is rare at these
+conditions; left on provisional, noted as a minor residual. Below is the original
+analysis.
+
+---
+
+**(original) Status: ROOT-CAUSED.** The single highest-leverage remaining gap for the
 Icn synthetic-spectrum match.
 
 **The gap (measured, GO1 day3/5):** the observed WC-like optical carbon features

@@ -32,6 +32,13 @@ import metal_nlte as mnlte
 
 C_KMS = 2.99792458e5
 
+# P2 #8: optical C III/C IV recombination lines whose ABSOLUTE is taken from
+# Cloudy's full model atom (not the provisional alpha_eff) when Cloudy reports
+# them. These are the WC-like features (C III 4650, C IV 5801) the provisional
+# ORL coefficients under-produce ~300x. Cloudy must have a real label for each
+# (see metal_cloudy.CLOUDY_LINES); falls back to the emissivity integral on 0/fail.
+_CLOUDY_ORL = {'C_III_4647', 'C_IV_5801'}
+
 
 def _shell_volumes(r):
     r = np.asarray(r, float)
@@ -532,7 +539,14 @@ def compute_metal_lines(state, snap=None, win_kms: float = 5000.0,
         #     [O III], [Ne III], …) the CHIANTI NLTE emissivity is authoritative
         #     AND temporally stable, so they are NOT exposed to Cloudy's occasional
         #     per-epoch thermal-bistability flicker. Else: emissivity integral.
-        has_cloudy = (flu > 1e-4 and name in cloudy_L
+        #     P2 #8: the optical C III/C IV WC-like ORLs (C III 4650, C IV 5801)
+        #     ALSO take Cloudy's absolute when Cloudy reports them — Cloudy's full
+        #     C III/C IV model atom carries the recombination + low-T dielectronic
+        #     physics our provisional alpha_eff under-produces ~300x. Falls back
+        #     to the emissivity integral when Cloudy gives 0 / fails (same as the
+        #     resonance lines); the energy ceiling below still guards both.
+        cloudy_absolute_ok = (flu > 1e-4 or name in _CLOUDY_ORL)
+        has_cloudy = (cloudy_absolute_ok and name in cloudy_L
                       and np.isfinite(cloudy_L[name]) and cloudy_L[name] > 0)
         if has_cloudy:
             L_line = float(cloudy_L[name])

@@ -20,8 +20,11 @@ handover), `FUTURE_WORK.md` (staged plan, esp. **P2 #7**), `GETTING_STARTED.md`.
   (alpha_eff 2.4e-13, tested, x2.40 no regression) + `validate_narrow_flux.py`.
   MEASURED that the optical C III/C IV WC-like feature absolutes are ~100-300x
   below observed (real EW 19-83 AA vs model ~0.1-1 AA) — a FORMATION-physics gap,
-  now **FUTURE_WORK P2 #8** (root-caused; fix = extend Cloudy emissivity-weighting
-  to the optical ORLs). Resonance lines (Cloudy-anchored) remain trustworthy.
+  **FUTURE_WORK P2 #8 RESOLVED**: phantom Cloudy label (`4647.42`→`4650.25`) +
+  routed optical-ORL absolutes through Cloudy's model atom. C III 4650 EW
+  −0.06→−5.54 Å, synthetic contrast ~1.0→1.55-1.66 vs real 1.8-2.2 (gap closed).
+  C IV 5801 still weak (Cloudy under-produces it). NOTE: the production grid npzs
+  predate P2 #8 — a C-series + GO1 regen would propagate the stronger C III 4650.
 
 
 ## Validated physics shipped this session (do not regress)
