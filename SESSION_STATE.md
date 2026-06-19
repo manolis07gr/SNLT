@@ -27,6 +27,19 @@ handover), `FUTURE_WORK.md` (staged plan, esp. **P2 #7**), `GETTING_STARTED.md`.
   predate P2 #8 — a C-series + GO1 regen would propagate the stronger C III 4650.
 
 
+
+- **P2 #8 PROPAGATED THROUGH THE C-SERIES (2026-06-18 regen, analysis_p8/).** All
+  14 H-free models (C1,C4-C15,GO1) re-run with the Cloudy C III 4650 absolute,
+  0 readLaw. C III 4650 now strong + CSM-mass-scaled: GO1 EW −8.5 Å(day1)/−5.54
+  (day3), C11/C15 ~−1.5 Å, C4 ~−0.06 Å (thin CSM, correctly weak). Synthetic
+  λ4650 bump now visible + aligned with real Icn (obs_comparison/
+  synthetic_vs_real_icn_final.png). NOTE: the L-ranking (grand_ranking) is
+  UNCHANGED — C III 4650 (L~5e40) stays below the UV CELs C III] 1909 (1.9e43) /
+  C IV 1549 (6e41) in total luminosity; the P8 win is in the OPTICAL SPECTRUM
+  (EW/contrast), not the bolometric budget. Correlations/PCA unchanged from
+  analysis_final2 (P8 only rescales C-line absolutes; structure-driven PCA is
+  identical). analysis_p8/ authoritative for the C-series; A/B from analysis_final2.
+
 ## Validated physics shipped this session (do not regress)
 Smooth shock-X-ray escape gate (binary→`exp(-τ)`, killed the metal breakout
 flicker); Cloudy robustness (dlaw strict-monotonic radii fix → 0 readLaw across
