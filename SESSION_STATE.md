@@ -40,6 +40,15 @@ handover), `FUTURE_WORK.md` (staged plan, esp. **P2 #7**), `GETTING_STARTED.md`.
   analysis_final2 (P8 only rescales C-line absolutes; structure-driven PCA is
   identical). analysis_p8/ authoritative for the C-series; A/B from analysis_final2.
 
+
+- **CLEAN FULL-40 RUN COMPLETE on one code version (HEAD 20dbf3d, 2026-06-23).**
+  analysis_head/ is now THE authoritative single-code-version dataset (supersedes
+  the mixed analysis_final2 [A/B] + analysis_p8 [C]). 40/40 models, 0 readLaw.
+  Verified coherent: C III 4650 CSM-mass-scaled (GO1 -5.54, C11/C15 ~-1.0, C4
+  -0.04 AA); A1 Halpha +2.1 (P-Cygni), C1 Halpha ~0 (H-free null); 3 regimes
+  (A/B Halpha->HeI10830; C CIII1909->CIV1549->OIII5007->HeI; GO1 CIII1909).
+  PCA carries from analysis_final2 (structure-dominated PC1 80.9%, R_prog -0.98).
+
 ## Validated physics shipped this session (do not regress)
 Smooth shock-X-ray escape gate (binary→`exp(-τ)`, killed the metal breakout
 flicker); Cloudy robustness (dlaw strict-monotonic radii fix → 0 readLaw across
