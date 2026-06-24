@@ -391,9 +391,30 @@ def truncate_to_photosphere(snap, r_phot=None, tau_es_threshold=2.0/3.0,
     mask = r > r_phot
     n_keep = int(mask.sum())
     if n_keep < 5:
-        raise ValueError(f"Truncation at r_phot={r_phot:.3e} cm leaves only "
-                         f"{n_keep} zones; need at least 5. Check r_phot or "
-                         f"tau_es_threshold (current threshold = {tau_es_threshold}).")
+        # Blind-model edge case: extremely optically-thick models (e.g. dense
+        # PPISN shells, τ_es reaching ~10⁶) cross the τ_es threshold within the
+        # outermost few zones, so the strict-τ photosphere leaves <5 zones above
+        # it. Rather than fail, place the truncation boundary to retain the
+        # outermost MIN_KEEP zones as the line-forming skin (the emergent
+        # spectrum of such a model forms in this thin optically-thin-ish outer
+        # layer). The photosphere is then defined by zone count, not the exact τ
+        # threshold, for this snapshot — warned explicitly. Only triggers on this
+        # degenerate case; validated models keep hundreds of zones above τ=2/3.
+        MIN_KEEP = 12
+        if len(r) > MIN_KEEP + 1:
+            i_phot = len(r) - 1 - MIN_KEEP
+            r_phot = float(r[i_phot])
+            mask = r > r_phot
+            n_keep = int(mask.sum())
+            tau_at = float(tau_es[i_phot]) if i_phot < len(tau_es) else float('nan')
+            print(f"  [stella_truncate] WARNING: τ_es≥{tau_es_threshold} photosphere "
+                  f"left <5 zones (optically thick to outer edge, τ_es up to "
+                  f"{float(np.max(tau_es)):.2g}); kept outermost {n_keep} zones as the "
+                  f"line-forming skin (r_phot={r_phot:.3e}, τ_es≈{tau_at:.2g}).")
+        else:
+            raise ValueError(f"Truncation at r_phot={r_phot:.3e} cm leaves only "
+                             f"{n_keep} zones and the model has only {len(r)} zones "
+                             f"total; cannot resolve a line-forming region.")
 
     # T_phot, L_phot at the truncated inner boundary
     # Use the boundary zone (just inside R_phot, last zone with tau >= threshold)
@@ -401,11 +422,20 @@ def truncate_to_photosphere(snap, r_phot=None, tau_es_threshold=2.0/3.0,
         T_phot = float(snap['T'][i_phot])
     else:
         T_phot = float(snap['T'][-1])
+    SIGMA_SB = 5.6704e-5
     if 'L' in snap and i_phot < len(snap['L']):
         L_phot = float(np.abs(snap['L'][i_phot]))
     else:
         # Compute from BB: L = 4π R² σ T⁴
-        SIGMA_SB = 5.6704e-5
+        L_phot = 4.0 * np.pi * r_phot * r_phot * SIGMA_SB * T_phot**4
+    # Robustness (blind-model edge case): in optically-thin models (e.g. a
+    # low-density WIND, τ_es≈0) the STELLA L column can be zero/non-finite at the
+    # photosphere zone, which would propagate a degenerate L_phot=0 into the
+    # downstream energy ceilings, the continuum-collapse guard, and the
+    # X-ray/L_phot diagnostic (divide-by-zero). Fall back to the blackbody
+    # luminosity 4πR²σT⁴ — the correct emergent photospheric luminosity. No
+    # effect on the validated models (their L column is populated and positive).
+    if not np.isfinite(L_phot) or L_phot <= 0.0:
         L_phot = 4.0 * np.pi * r_phot * r_phot * SIGMA_SB * T_phot**4
 
     # Build truncated snap

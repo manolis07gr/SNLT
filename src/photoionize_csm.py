@@ -718,7 +718,9 @@ def solve_photoionization_equilibrium(
             print(f"  + bremsstrahlung shock component:")
             print(f"    T_shock = {T_shock:.2e} K (kT = {kT_keV:.1f} keV)")
             print(f"    L_X_brems = {L_X_brems:.3e} erg/s  "
-                  f"({L_X_brems/L_phot:.2f}× L_phot)")
+                  f"({L_X_brems/L_phot:.2f}× L_phot)"
+                  if L_phot > 0 else
+                  f"    L_X_brems = {L_X_brems:.3e} erg/s  (L_phot=0)")
             print(f"    Γ_brems(R_phot) ≈ {Gamma_X_at_R:.3e} s⁻¹")
             print(f"    Γ_BB/Γ_brems(R_phot) = "
                   f"{(4.0*np.pi*0.5*G_at_zero) / max(Gamma_X_at_R, 1e-30):.2e}")
