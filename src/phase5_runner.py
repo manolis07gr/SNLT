@@ -198,46 +198,30 @@ def run_phase5_for_state(state, snap, n_packets: int = 50000,
                     _vg = (_lam / float(_li['lambda_rest']) - 1.0) * 2.99792458e5
                     _, _Fn = _urt.unified_line_profile(_r, _v, _T, _ne, _li,
                                                        _Rph, _Tph, vgrid_kms=_vg)
-                    # The unified solver provides the switch-free MORPHOLOGY
-                    # (P-Cygni vs emission vs electron-scattering wings); the
-                    # STRENGTH stays the validated budget/He-NLTE value. So EW-
-                    # match the unified excess to the default profile's emission
-                    # area (both emission & absorption scale together, preserving
-                    # the P-Cygni ratio), guaranteeing L is unchanged while the
-                    # shape is adopted. Avoids the absolute-amplitude fragility.
-                    _Fdef = np.asarray(_sp.get('F_norm_corrected',
-                                               _sp.get('F_norm')), float)
-                    if (np.all(np.isfinite(_Fn)) and _Fn.shape == _lam.shape
-                            and _Fdef.shape == _lam.shape):
-                        _a_def = float(np.trapezoid(np.clip(_Fdef - 1.0, 0, None), _vg))
-                        _a_uni = float(np.trapezoid(np.clip(_Fn - 1.0, 0, None), _vg))
-                        _scale = (_a_def / _a_uni) if _a_uni > 0 else 0.0
-                        if _a_uni > 0 and _a_def > 0 and 0.02 <= _scale <= 60.0:
-                            # Scale ONLY the emission excess to conserve the line
-                            # L; keep the absorption trough as the unified solver
-                            # computes it (its depth is physically bounded [0,1] by
-                            # the line optical depth, independent of the emission
-                            # strength — scaling it too would drive F<0). Floor F≥0.
-                            # The scale is capped at 60×: real He I lines emit
-                            # 12–43× less in the unified solver's native amplitude
-                            # than the MC default (a source-function normalisation
-                            # difference — we adopt the unified SHAPE and rescale to
-                            # the validated He-NLTE strength), so they must pass. But
-                            # truly negligible subordinate lines (Paα/Paβ, scale
-                            # 400–1100×) are pure numerical noise the unified solver
-                            # barely emits; a wild rescale would spike F, so those
-                            # keep the validated default shape instead.
-                            _exc = _Fn - 1.0
-                            _emis = np.clip(_exc, 0.0, None) * _scale
-                            _absb = np.clip(_exc, None, 0.0)
-                            _Fn = np.clip(1.0 + _emis + _absb, 0.0, None)
-                        else:
-                            raise ValueError(f"EW-match scale {_scale:.2g} out of range")
-                        _sp['F_norm'] = _Fn
-                        if 'F_norm_corrected' in _sp:
-                            _sp['F_norm_corrected'] = _Fn.copy()
-                        _sp['profile_method'] = 'unified'
-                        n_ok += 1
+                    # The unified v2 solver provides the MORPHOLOGY natively at a
+                    # physical F/F_cont amplitude (continuous scatter/trap source
+                    # blend, validated per regime: A1 IIP P-Cygni, A11 IIn
+                    # emission — see unified_line_rt.unified_line_profile). The
+                    # line STRENGTH is carried separately by L_line_corrected
+                    # (recombination budget / He-NLTE) — the npz stores shape and
+                    # strength independently — so the profile needs no rescaling.
+                    # (The former EW-match to the MC emission area inflated the
+                    # homologous P-Cygni ~100x into a spike and was removed.)
+                    if not (np.all(np.isfinite(_Fn)) and _Fn.shape == _lam.shape):
+                        raise ValueError("unified profile non-finite/shape mismatch")
+                    _Fn = np.clip(_Fn, 0.0, None)
+                    # sanity ceiling: a late/nebular continuum-collapse epoch can
+                    # still concentrate the source into an unphysical display
+                    # amplitude; keep the validated default shape there.
+                    if float(np.nanmax(_Fn)) > 150.0:
+                        raise ValueError(
+                            f"unified peak-F {float(np.nanmax(_Fn)):.2g}>150 "
+                            f"(continuum-collapse epoch); kept default")
+                    _sp['F_norm'] = _Fn
+                    if 'F_norm_corrected' in _sp:
+                        _sp['F_norm_corrected'] = _Fn.copy()
+                    _sp['profile_method'] = 'unified'
+                    n_ok += 1
                 except Exception as _e:
                     if verbose:
                         print(f"[phase5][unified] {_ln} kept default shape ({_e})")

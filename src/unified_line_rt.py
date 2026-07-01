@@ -41,6 +41,7 @@ engine + its analytic limits):
 ────────────────────────────────────────────────────────────────────────────
 """
 from __future__ import annotations
+import os
 import numpy as np
 
 # ---------------------------------------------------------------------------
@@ -154,7 +155,37 @@ def solve_two_level_ali(tau, B, eps, I_top=0.0, I_bottom=0.0,
     tau = np.asarray(tau, float)
     B = np.asarray(B, float)
     eps = np.clip(np.asarray(eps, float), 1e-12, 1.0)
-    S = B.copy()                                   # LTE start
+
+    # ---- grid sanitation (REQUIRED for real STELLA snapshots) ----
+    # STELLA piles many zones at near-identical radii (dense shock shells) and
+    # zones with χ_line→0 contribute dτ=0, so the cumulative τ grid contains
+    # degenerate steps (dτ ≤ 0 or ≪ machine-meaningful). Feautrier coefficients
+    # scale as 1/dτ², so a dτ≈1e-30 floor produces ~1e59 entries whose roundoff
+    # destroys the tridiagonal elimination → NaN (this — not the physics — is
+    # why the solver "failed to converge" on every real snapshot while passing
+    # all analytic tests on smooth grids). Solve on a reduced strictly-
+    # increasing grid (merge points closer than dτ_min: optically coincident
+    # layers, Δτ≲1e-6, are physically identical) and interpolate S back.
+    tau_full = tau.copy()
+    n_full = tau_full.size
+    dtau_min = 1e-6
+    keep = np.ones(n_full, bool)
+    _last = tau_full[0]
+    for _i in range(1, n_full):
+        if tau_full[_i] - _last < dtau_min * (1.0 + _last):
+            keep[_i] = False
+        else:
+            _last = tau_full[_i]
+    if keep.sum() < 3:
+        # whole shell optically coincident / thin: J≈S trivial limit
+        S = np.clip(eps * B, 0.0, None)
+        return {'S': S, 'J': S.copy(), 'n_iter': 0, 'converged': True,
+                'dS_last': 0.0}
+    tau = tau_full[keep]
+    B_r = B[keep]
+    eps_r = eps[keep]
+
+    S = B_r.copy()                                 # LTE start
     hist = []
     converged = False
     dS = np.inf
@@ -163,19 +194,24 @@ def solve_two_level_ali(tau, B, eps, I_top=0.0, I_bottom=0.0,
                                semi_infinite=semi_infinite)
         # ALI update with the diagonal operator:
         #   S_new = [1 - (1-ε)Λ*]^{-1} [ (1-ε)(J - Λ*·S) + εB ]
-        one_eps = 1.0 - eps
-        num = one_eps * (J - lstar * S) + eps * B
+        one_eps = 1.0 - eps_r
+        num = one_eps * (J - lstar * S) + eps_r * B_r
         den = 1.0 - one_eps * lstar
         S_new = num / np.maximum(den, 1e-300)
         S_new = np.maximum(S_new, 0.0)
+        if not np.all(np.isfinite(S_new)):
+            # numerical breakdown — do not iterate on garbage; report honestly
+            converged = False
+            break
         dS = float(np.max(np.abs(S_new - S) / np.maximum(np.abs(S_new), 1e-300)))
         hist.append(S_new.copy())
         S = S_new
         # Ng acceleration every 4 iterations (uses last 3 iterates)
         if ng and len(hist) >= 4 and (it % 4 == 3):
-            S = _ng_accelerate(hist[-3], hist[-2], hist[-1])
-            S = np.maximum(S, 0.0)
-            hist[-1] = S.copy()
+            S_ng = _ng_accelerate(hist[-3], hist[-2], hist[-1])
+            if np.all(np.isfinite(S_ng)):
+                S = np.maximum(S_ng, 0.0)
+                hist[-1] = S.copy()
         if len(hist) > 5:
             hist.pop(0)
         if dS < tol:
@@ -183,22 +219,30 @@ def solve_two_level_ali(tau, B, eps, I_top=0.0, I_bottom=0.0,
             break
     Jf, _ = feautrier_J(tau, S, I_top=I_top, I_bottom=I_bottom,
                         semi_infinite=semi_infinite)
-    return {'S': S, 'J': Jf, 'n_iter': it + 1, 'converged': converged,
+    # map the reduced-grid solution back to the caller's full grid (merged
+    # points are optically coincident → same S by construction)
+    if keep.sum() != n_full:
+        S_full = np.interp(tau_full, tau, S)
+        J_full = np.interp(tau_full, tau, Jf)
+    else:
+        S_full, J_full = S, Jf
+    return {'S': S_full, 'J': J_full, 'n_iter': it + 1, 'converged': converged,
             'dS_last': dS}
 
 
 def _ng_accelerate(s2, s1, s0):
     """Ng (1974) 3-point acceleration of the source-function iteration."""
-    d0 = s0 - s1
-    d1 = s1 - s2
-    q0 = d0
-    q1 = d0 - d1
-    A = float(np.sum(q1 * q1))
-    if A <= 1e-300:
-        return s0
-    b = float(np.sum(q1 * q0)) / A
-    b = np.clip(b, -2.0, 2.0)
-    return s0 + b * (s1 - s0)
+    with np.errstate(over='ignore', invalid='ignore'):
+        d0 = s0 - s1
+        d1 = s1 - s2
+        q0 = d0
+        q1 = d0 - d1
+        A = float(np.sum(q1 * q1))
+        if not np.isfinite(A) or A <= 1e-300:
+            return s0
+        b = float(np.sum(q1 * q0)) / A
+        b = np.clip(b, -2.0, 2.0)
+        return s0 + b * (s1 - s0)
 
 
 # ===========================================================================
@@ -356,10 +400,61 @@ def _planck_lam(lam0_AA, T):
     return (2.0 * _H_PL * _C_CGS ** 2 / lam_cm ** 5) / np.expm1(x) * 1e-8
 
 
+def _planck_lam_vec(lam0_AA, T):
+    """Per-Å Planck B_λ for an array of temperatures."""
+    lam_cm = lam0_AA * 1e-8
+    x = np.clip(_H_PL * _C_CGS / (lam_cm * _KB * np.maximum(np.asarray(T, float), 1.0)),
+                1e-6, 700.0)
+    return (2.0 * _H_PL * _C_CGS ** 2 / lam_cm ** 5) / np.expm1(x) * 1e-8
+
+
+def _gamma_pi_bb(n, T):
+    """Photoionization rate of hydrogen level n in an UNDILUTED blackbody T [s^-1]
+    (Kramers hydrogenic cross-section). Multiply by the dilution W(r) for the
+    diluted photospheric field."""
+    nu_th = 3.288e15 / n ** 2
+    nu = np.linspace(nu_th, nu_th * 8.0, 2000)
+    sig = 7.906e-18 * n * (nu_th / nu) ** 3
+    x = np.clip(_H_PL * nu / (_KB * max(float(T), 1.0)), 1e-6, 700.0)
+    Bnu = 2.0 * _H_PL * nu ** 3 / _C_CGS ** 2 / np.expm1(x)
+    return float(np.trapezoid(4.0 * np.pi * Bnu / (_H_PL * nu) * sig, nu))
+
+
+# H-line recombination creation: lambda_rest -> (n_upper, alpha_eff case-B at 1e4 K
+# [cm^3/s]). Drives the C_rec term (robust first-principles emissivity) and the
+# photoionization-destruction upper level. He lines omit both terms (their trapped
+# limit is carried by the He-NLTE S_zone; the scattering limit needs neither).
+_H_LINE_REC = {6562.8: (3, 1.17e-13), 4861.3: (4, 3.03e-14), 4340.5: (5, 1.2e-14),
+               18751.0: (4, 3.0e-14), 12818.1: (5, 1.4e-14)}
+
+
+def homology_trap_weight(r, v):
+    """Continuous Sobolev-validity weight w in [0,1] for the SOURCE blend.
+
+    w -> 0 : strongly sheared / homologous flow (photons Doppler-escape the local
+             resonance; the local-NLTE trapped-J̄ over-pumps the upper level, so
+             the raw S_zone absolute is invalid -> use the scattering source).
+    w -> 1 : quasi-static / velocity-reversed dense CSM (resonance trapping is
+             real; the NLTE S_zone is the correct local source -> use it).
+
+    Same physics as formal_line_profile.sobolev_validity (homology spread +
+    velocity-reversal fraction, thresholds 0.5 / 0.10), but CONTINUOUS — the
+    binary gate becomes a smooth blend, removing the regime cliff between epochs.
+    """
+    r = np.asarray(r, float); v = np.asarray(v, float)
+    rv = r / np.maximum(np.abs(v), 1e-30)
+    spread = float(np.std(rv) / np.maximum(np.median(rv), 1e-30))
+    dv = np.diff(v)
+    frev = float(np.mean(dv < 0)) if dv.size else 0.0
+    m = max(spread / 0.5, frev / 0.10)
+    return float(np.clip(m, 0.0, 1.0))
+
+
 def unified_line_profile(r, v, T_gas, n_e, line, R_phot, T_phot,
                          vgrid_kms=None, vturb_kms=25.0, n_p=140,
                          use_ali=True, verbose=False):
-    """Switch-free emergent line profile (F/F_cont) for one line.
+    """Unified emergent line profile (F/F_cont) for one line — one transport,
+    one continuous source, valid across all regimes.
 
     r, v, T_gas, n_e : per-zone state (cgs; v = radial speed [cm/s]).
     line : dict from mc_multi_line line-input extraction — needs
@@ -368,9 +463,31 @@ def unified_line_profile(r, v, T_gas, n_e, line, R_phot, T_phot,
     R_phot, T_phot : photosphere radius [cm] and temperature [K].
     Returns (lam_grid_AA, F_norm).
 
-    Pipeline: NLTE creation source S_zone → nonlocal ALI scattering source
-    S(r)=(1-ε)J̄+ε·S_zone → gate-free observer-frame ray-trace F(v_obs) →
-    electron-scattering redistribution (τ_es wings). No homology gate anywhere.
+    SOURCE (v2, validated against the trusted per-regime references):
+      S_i = (1-w)·S_scatter,i + w·S_trap,i   [disk units]
+      S_scatter = [(1-ε_eff)β_i W_i + ε_eff B_i/Ic + C_rec,i] / [ε_eff + β_i(1-ε_eff)]
+        — the Sobolev-regularized two-level source: β from the zone Sobolev τ,
+          W geometric dilution (the formal solver's validated J̄=W·Ic limit),
+          thermal creation ε·B(T_gas), first-principles recombination creation
+          C_rec=η_rec/χ (H lines), and destruction ε_eff = ε_coll + ε_pi with
+          ε_pi = W·Γ_pi(n_up,T_phot)/(W·Γ_pi+A_ul) the photoionization of the
+          upper level by the diluted photospheric field (what prevents the
+          trapped recombination photons from over-pumping the homologous case).
+      S_trap = clip(S_zone/Ic, 0, 150)
+        — the local NLTE source, valid where resonance trapping is real
+          (quasi-static dense CSM; e.g. A11's S_zone/Ic≈20 == its validated
+          emission amplitude).
+      w = homology_trap_weight(r, v): the CONTINUOUS Sobolev-validity measure
+        (A1 IIP: w≈0.01 → P-Cygni; A11 IIn: w=1.0 → emission), replacing the
+        binary gate with a smooth physical blend.
+    TRANSPORT: observer-frame ray-trace (any v-field; occultation) →
+      electron-scattering redistribution → anti-alias smoothing.
+
+    NOTE use_ali is retained for signature compatibility; the deep-scattering
+    ALI engine (solve_two_level_ali) remains for the analytic validation suite,
+    but the production source is the closed-form blend above (the static-grid
+    Feautrier over-traps sheared flows — Doppler decoupling — so the ALI J̄ is
+    not used for the profile).
     """
     r = np.asarray(r, float); v = np.asarray(v, float)
     T_gas = np.maximum(np.asarray(T_gas, float), 1.0)
@@ -396,33 +513,58 @@ def unified_line_profile(r, v, T_gas, n_e, line, R_phot, T_phot,
     chi_line = tau_zone * dvdr / (np.sqrt(np.pi) * vth)
     chi_line = np.where(np.isfinite(chi_line) & (chi_line > 0), chi_line, 0.0)
 
-    # --- nonlocal ALI source: creation term = NLTE S_zone; ε = collisional
-    #     destruction fraction q_ul·n_e/(q_ul·n_e + A_ul), q_ul≈8.63e-6/(g_u√T).
-    if use_ali and np.any(chi_line > 0):
-        q_ul = 8.63e-6 / (g_u * np.sqrt(T_gas))              # cm³/s (Ω~1)
-        Cul = n_e * q_ul
-        eps = Cul / (Cul + max(A_ul, 1e-30))
-        eps = np.clip(eps, 1e-8, 1.0)
-        # radial line optical depth (cumulative from the outside inward)
-        rr = r
-        dr = np.abs(np.diff(rr, prepend=rr[0]))
-        tau_line = np.cumsum((chi_line * dr)[::-1])[::-1]     # τ increases inward
-        tau_line = np.clip(tau_line, 0.0, 1e8)
-        # Normalise the source to O(1) units (÷ Ic) so the tridiagonal solve
-        # never over/under-flows on tiny Planck-scale values; scale back after.
-        Bn = np.clip(S_zone / Ic, 0.0, 1e12)
-        # order surface→deep for the solver (surface = outer, τ small)
-        with np.errstate(over='ignore', invalid='ignore', divide='ignore'):
-            out = solve_two_level_ali(tau_line[::-1], Bn[::-1], eps[::-1],
-                                      I_top=0.0, I_bottom=1.0,
-                                      max_iter=400, tol=1e-4)
-        S_line = out['S'][::-1] * Ic
-        if not np.all(np.isfinite(S_line)):
-            S_line = S_zone
-    else:
-        S_line = S_zone
+    # --- v2 source: continuous scatter/trap blend (see docstring) ---
+    # collisional destruction ε_coll = q_ul n_e/(q_ul n_e + A_ul)
+    q_ul = 8.63e-6 / (g_u * np.sqrt(T_gas))                  # cm³/s (Ω~1)
+    Cul = n_e * q_ul
+    eps = np.clip(Cul / (Cul + max(A_ul, 1e-30)), 1e-12, 1.0)
+    # zone Sobolev escape
+    beta = np.where(tau_zone > 1e-6,
+                    (1.0 - np.exp(-np.minimum(tau_zone, 700.0)))
+                    / np.maximum(tau_zone, 1e-30), 1.0)
+    # geometric dilution of the photospheric field
+    xdil = np.clip((R_phot / np.maximum(r, R_phot)) ** 2, 0.0, 1.0)
+    W = 0.5 * (1.0 - np.sqrt(np.maximum(1.0 - xdil, 0.0)))
+    Bn = np.clip(_planck_lam_vec(lam0, T_gas) / Ic, 0.0, 1e6)   # thermal, disk units
+    # H-line recombination creation + photoionization destruction
+    Cn = np.zeros_like(r)
+    eps_pi = 0.0
+    for _lamH, (_nup, _aeff) in _H_LINE_REC.items():
+        if abs(lam0 - _lamH) < 5.0:
+            a_T = _aeff * (np.maximum(T_gas, 100.0) / 1e4) ** -0.9
+            eta = _H_PL * nu0 / (4.0 * np.pi) * a_T * n_e * n_e   # n_p ≈ n_e (H-rich)
+            dlamD = lam0 * vth / _C_CGS                            # Doppler width [Å]
+            Cn = np.where(chi_line > 0,
+                          eta / (np.sqrt(np.pi) * np.maximum(dlamD, 1e-10))
+                          / np.maximum(chi_line, 1e-30) / Ic, 0.0)
+            _G = _gamma_pi_bb(_nup, T_phot)
+            eps_pi = W * _G / (W * _G + max(A_ul, 1e-30))
+            break
+    eps_eff = np.clip(eps + eps_pi, 1e-12, 1.0)
+    S_scatter = ((1.0 - eps_eff) * beta * W + eps_eff * Bn + Cn) \
+        / np.maximum(eps_eff + beta * (1.0 - eps_eff), 1e-12)
+    S_trap = np.clip(S_zone / Ic, 0.0, 150.0)
+    w_trap = homology_trap_weight(r, v)
+    S_disk = (1.0 - w_trap) * S_scatter + w_trap * S_trap      # disk units (÷Ic)
+    S_disk = np.where(np.isfinite(S_disk) & (S_disk >= 0), S_disk, 0.0)
+    if verbose:
+        print(f"[urt] λ{lam0:.0f}: w_trap={w_trap:.2f} eps_pi={np.max(np.atleast_1d(eps_pi)):.1e} "
+              f"S/Ic=[{S_disk.min():.3g},{S_disk.max():.3g}]")
+    # Debug dump: capture the exact solver inputs for standalone iteration
+    # (SNLT_URT_DUMP=<dir>)
+    _dumpdir = os.environ.get('SNLT_URT_DUMP')
+    if _dumpdir:
+        try:
+            os.makedirs(_dumpdir, exist_ok=True)
+            np.savez(os.path.join(_dumpdir, f'ali_inputs_{lam0:.0f}.npz'),
+                     tau_zone=tau_zone, eps=eps, Ic=Ic, S_zone=S_zone,
+                     chi_line=chi_line, r=r, v=v, T_gas=T_gas, n_e=n_e,
+                     R_phot=R_phot, T_phot=T_phot, w_trap=w_trap,
+                     S_scatter=S_scatter, S_trap=S_trap, S_disk=S_disk)
+        except Exception:
+            pass
 
-    # --- gate-free emergent profile (any v-field) ---
+    # --- emergent profile (any v-field) ---
     if vgrid_kms is None:
         vmax = 1.25 * float(np.max(np.abs(v))) / 1e5
         vgrid_kms = np.linspace(-vmax, vmax, 351)
@@ -434,7 +576,7 @@ def unified_line_profile(r, v, T_gas, n_e, line, R_phot, T_phot,
     # ALIASES (the exp(-x²) resonance jumps between grid cells → spiky profile).
     _dv_grid = float(np.median(np.abs(np.diff(np.asarray(vgrid_kms, float)))))
     _vth_prof = max(float(np.median(vth)) / 1e5, 3.0 * _dv_grid)
-    F = emergent_profile(r, v, S_line / Ic, chi_line, R_phot, 1.0, vgrid_kms,
+    F = emergent_profile(r, v, S_disk, chi_line, R_phot, 1.0, vgrid_kms,
                          vth_kms=_vth_prof, occultation=True,
                          n_p=n_p)
 
