@@ -70,6 +70,46 @@ which over-pumps recombination lines by ~10³× — so the residual ~factor-2
 (nonlocal escape suppression) is still an explicit uncertainty, not papered over.
 `ep_source_function()` is retained as a diagnostic / ALI foundation.
 
+**◑ UNIFIED SWITCH-FREE LINE RT — engine built + validated, but the profile
+coupling is NOT production-ready (opt-in `--line-profile-method unified`;
+`src/unified_line_rt.py`, `src/validate_unified_rt.py`; committed 7d414d4).**
+The ALI two-level engine passes 8/8 analytic limits (√ε, LTE, thermalization,
+thin escape, deep convergence, symmetric thin emission, P-Cygni, e-scatter). BUT
+a full-grid test exposed that it does NOT reproduce the observed profiles on real
+snapshots, and the root cause is now precisely localized (do not re-run
+production until fixed):
+  1. **ALI non-convergence on real data.** For homologous Hα (A1 d050:
+     τ_line≈8×10⁵, ε≈1×10⁻⁶, B=S_zone/Ic≈120) `solve_two_level_ali` does NOT
+     converge even at 8000 iterations — it overflows to non-finite and hits the
+     `if not isfinite: S_line = S_zone` fallback, which uses the RAW bright NLTE
+     source (≈120× continuum) → emergent Hα is an emission spike (peak≈86), not
+     the observed P-Cygni. The Feautrier tridiagonal solve needs numerical
+     stabilization (rescaling / log-space / better deep-BC) at τ≳10⁵, ε≲10⁻⁵.
+  2. **Fallback source is regime-dependent, so no band-aid is a valid default.**
+     Tested two closed-form fallbacks: raw `S_zone` → emission everywhere (spike
+     on homologous A1); `√ε·B` (Eddington-Barbier scattering surface) → fixes A1
+     (peak 1.04, absmin 0.81, matches head P-Cygni 1.10/0.80) but KILLS the IIn
+     emission (A11 → peak 1.000, pure absorption). The correct source is
+     regime-adaptive — which is exactly what a *converged* ALI would produce
+     (scattering when τ<1/ε, thermalized emission when τ>1/ε) and why the
+     existing Sobolev gate (formal-for-homologous / MC-for-dense) is physically
+     justified, not a hack.
+  3. **The EW-match coupling (current committed code) is also wrong** — it scales
+     the unified emission to the *MC* emission area, but for homologous ejecta the
+     correct reference is the *formal* P-Cygni (small), so it inflates Hα ~100×
+     into a spike (A1 d050 peak 15.9 vs head 1.10). Even with a correct source
+     this coupling must be replaced: use the native ALI shape directly (strength
+     is carried separately by `L_line_corrected`).
+  Also found (separate): A1/B1 (no-CSM controls) HANG under unified on their
+  degenerate early epochs (day<010) — the ray-trace/ALI loops on that fast/wide
+  structure; head skipped those epochs anyway. Needs a perf/robustness guard.
+  **Concrete next step:** stabilize the Feautrier/ALI numerics so it converges at
+  τ≈10⁶/ε≈10⁻⁶ (verify on A1 d050 → scattering P-Cygni AND A11 d050 → broad
+  emission from the SAME solver, no EW-match), re-validate 8/8 + a NEW morphology
+  test (emission/absorption RATIO per regime, not just "smooth + has both lobes"),
+  then re-run. Rankings are already known robust (0% dominant-feature change vs
+  head over 188 model-epochs — L is preserved regardless of shape).
+
 **4. Continuum / energy budget without hydrogen.  ✅ DONE (guard + diagnostics;
 upstream opacity deferred).**
 ~~The recombination-budget and continuum normalization were built for H-rich
