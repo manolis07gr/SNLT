@@ -175,17 +175,46 @@ def run_phase5_for_state(state, snap, n_packets: int = 50000,
             _ne = np.asarray(merged.n_e, float)
             _Rph = float(getattr(merged, 'R_phot_cm', np.nan))
             _Tph = float(getattr(merged, 'T_phot', np.nan))
+            # pre-pass: the strongest default emission area sets a floor so that
+            # physically-absent lines (e.g. H lines in an H-free model, EW≈0) keep
+            # their default flat shape — their near-zero EW makes the shape override
+            # ill-conditioned and pointless (the line isn't observable).
+            _areas = {}
+            for _ln, _sp in spectra.items():
+                if _ln not in p5.LINE_CATALOG:
+                    continue
+                _fd = np.asarray(_sp.get('F_norm_corrected', _sp.get('F_norm')), float)
+                _areas[_ln] = float(np.sum(np.clip(_fd - 1.0, 0, None)))
+            _a_floor = 1e-3 * (max(_areas.values()) if _areas else 0.0)
             n_ok = 0
             for _ln, _sp in spectra.items():
                 if _ln not in p5.LINE_CATALOG:
                     continue                      # H/He base lines only (skip metals)
+                if _areas.get(_ln, 0.0) <= _a_floor:
+                    continue                      # negligible/absent line — keep default
                 try:
                     _li = p5.extract_line_inputs(merged, _ln)
                     _lam = np.asarray(_sp['lambda_AA'], float)
                     _vg = (_lam / float(_li['lambda_rest']) - 1.0) * 2.99792458e5
                     _, _Fn = _urt.unified_line_profile(_r, _v, _T, _ne, _li,
                                                        _Rph, _Tph, vgrid_kms=_vg)
-                    if np.all(np.isfinite(_Fn)) and _Fn.shape == _lam.shape:
+                    # The unified solver provides the switch-free MORPHOLOGY
+                    # (P-Cygni vs emission vs electron-scattering wings); the
+                    # STRENGTH stays the validated budget/He-NLTE value. So EW-
+                    # match the unified excess to the default profile's emission
+                    # area (both emission & absorption scale together, preserving
+                    # the P-Cygni ratio), guaranteeing L is unchanged while the
+                    # shape is adopted. Avoids the absolute-amplitude fragility.
+                    _Fdef = np.asarray(_sp.get('F_norm_corrected',
+                                               _sp.get('F_norm')), float)
+                    if (np.all(np.isfinite(_Fn)) and _Fn.shape == _lam.shape
+                            and _Fdef.shape == _lam.shape):
+                        _a_def = float(np.trapezoid(np.clip(_Fdef - 1.0, 0, None), _vg))
+                        _a_uni = float(np.trapezoid(np.clip(_Fn - 1.0, 0, None), _vg))
+                        if _a_uni > 0 and _a_def > 0:
+                            _Fn = 1.0 + (_Fn - 1.0) * (_a_def / _a_uni)
+                        else:
+                            raise ValueError("degenerate EW match")
                         _sp['F_norm'] = _Fn
                         if 'F_norm_corrected' in _sp:
                             _sp['F_norm_corrected'] = _Fn.copy()
