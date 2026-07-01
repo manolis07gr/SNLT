@@ -125,6 +125,12 @@ def run_phase5_for_state(state, snap, n_packets: int = 50000,
     # electron scattering), so fall back to the MC kernel (with the empirical
     # correction). This keeps both regimes physical.
     requested_method = profile_method   # what the user asked for (drives strengths)
+    if profile_method == 'unified':
+        # Switch-free unified nonlocal RT (opt-in). Build the base spectra with
+        # the MC kernel (for L / L_cont_band / EW machinery), then override each
+        # H/He line's SHAPE with the unified solver below — bypassing the Sobolev
+        # gate entirely (the unified solver is valid across all regimes).
+        profile_method = 'mc'
     if profile_method == 'formal' and _HAVE_FORMAL_P5 and not lock:
         try:
             sv = _flp_p5.sobolev_validity(np.asarray(merged.r, float),
@@ -154,6 +160,46 @@ def run_phase5_for_state(state, snap, n_packets: int = 50000,
         win_kms=win_kms, n_pix=n_pix,
         peel_callback=peel_callback, profile_method=profile_method,
         verbose=verbose)
+
+    # ---- Unified nonlocal RT: override each H/He line SHAPE (opt-in) ----
+    # Switch-free: bypasses the Sobolev gate; the ALI nonlocal source + gate-free
+    # ray-trace + electron-scattering wings replace the per-line F_norm. Line
+    # STRENGTHS (L) are unchanged (set by the budget/He-NLTE below). Falls back
+    # to the default shape per line on any error. Guarded → default byte-identical.
+    if requested_method == 'unified':
+        try:
+            import unified_line_rt as _urt
+            _r = np.asarray(merged.r, float)
+            _v = np.abs(np.asarray(merged.v, float))
+            _T = np.asarray(getattr(merged, 'T', getattr(merged, 'T_gas', None)), float)
+            _ne = np.asarray(merged.n_e, float)
+            _Rph = float(getattr(merged, 'R_phot_cm', np.nan))
+            _Tph = float(getattr(merged, 'T_phot', np.nan))
+            n_ok = 0
+            for _ln, _sp in spectra.items():
+                if _ln not in p5.LINE_CATALOG:
+                    continue                      # H/He base lines only (skip metals)
+                try:
+                    _li = p5.extract_line_inputs(merged, _ln)
+                    _lam = np.asarray(_sp['lambda_AA'], float)
+                    _vg = (_lam / float(_li['lambda_rest']) - 1.0) * 2.99792458e5
+                    _, _Fn = _urt.unified_line_profile(_r, _v, _T, _ne, _li,
+                                                       _Rph, _Tph, vgrid_kms=_vg)
+                    if np.all(np.isfinite(_Fn)) and _Fn.shape == _lam.shape:
+                        _sp['F_norm'] = _Fn
+                        if 'F_norm_corrected' in _sp:
+                            _sp['F_norm_corrected'] = _Fn.copy()
+                        _sp['profile_method'] = 'unified'
+                        n_ok += 1
+                except Exception as _e:
+                    if verbose:
+                        print(f"[phase5][unified] {_ln} kept default shape ({_e})")
+            if verbose:
+                print(f"[phase5][unified] nonlocal RT applied to {n_ok} H/He lines "
+                      f"(switch-free; gate bypassed).")
+        except Exception as _e:
+            if verbose:
+                print(f"[phase5][unified] unavailable, default shapes kept ({_e})")
 
     # ---- Phase 5b: line strengths ----
     # The STRENGTH method is keyed to what the user REQUESTED, independent of

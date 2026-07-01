@@ -3027,14 +3027,17 @@ def main():
                              'classification "2γ-dominated" vs "Lyα-dominated" '
                              'and A_eff are added to the populations diag dict.')
     parser.add_argument('--line-profile-method', type=str, default='mc',
-                        choices=['mc', 'formal'],
+                        choices=['mc', 'formal', 'unified'],
                         help="Emergent line-profile method. 'mc' (default): "
                              "Monte-Carlo peel (continuum scatter + volumetric "
                              "recombination). 'formal': Sobolev P-Cygni formal "
                              "solution with scattering source function "
                              "S_L=(1-eps)J_bar+eps*B, which removes the spurious "
                              "blueward emission peak and over-strong amplitude of "
-                             "the thin-shell recombination channel.")
+                             "the thin-shell recombination channel. 'unified' "
+                             "(opt-in): switch-free nonlocal ALI RT — gate-free "
+                             "emergent profile + electron-scattering wings "
+                             "(unified_line_rt), valid across all regimes.")
     parser.add_argument('--line-profile-method-lock', action='store_true',
                         dest='line_profile_method_lock', default=False,
                         help="Keep the line-STRENGTH policy (recombination-budget / "
