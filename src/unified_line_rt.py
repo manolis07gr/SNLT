@@ -122,7 +122,8 @@ def feautrier_J(tau, S, I_top=0.0, I_bottom=0.0, semi_infinite=False):
     dp[0] = rhs[0] / b[0]
     for i in range(1, n):
         m = b[i] - a[i] * cp[i - 1]
-        m = m if abs(m) > 1e-300 else 1e-300
+        if abs(m) < 1e-30:                          # sign-preserving pivot floor
+            m = 1e-30 if m >= 0 else -1e-30
         cp[i] = c[i] / m
         dp[i] = (rhs[i] + a[i] * dp[i - 1]) / m
     u = np.zeros(n)
@@ -323,3 +324,106 @@ def escatter_redistribute(vgrid_kms, F, tau_es, T_e=1e4):
     excess = F - 1.0                                   # scatter only the line photons
     conv = np.convolve(excess, ker, mode='same')
     return 1.0 + conv
+
+
+# ===========================================================================
+# PHASE 2 — top-level coupling: state + per-line NLTE inputs → emergent F_norm.
+# Switch-free (no gate); uses the pipeline's NLTE source as the creation term and
+# adds nonlocal scattering (ALI) + gate-free ray-trace + electron-scatter wings.
+# ===========================================================================
+_SIGMA_T = 6.652458732e-25     # Thomson cross-section [cm^2]
+_H_PL = 6.62607015e-27
+_C_CGS = 2.99792458e10
+_SIGMA_INT = 0.02654           # π e²/(m_e c) [cm² Hz]
+
+
+def _planck_nu(nu, T):
+    T = max(float(T), 1.0)
+    x = _H_PL * nu / (_KB * T)
+    x = np.clip(x, 1e-8, 700.0)
+    return 2.0 * _H_PL * nu ** 3 / _C_CGS ** 2 / np.expm1(x)
+
+
+def unified_line_profile(r, v, T_gas, n_e, line, R_phot, T_phot,
+                         vgrid_kms=None, vturb_kms=25.0, n_p=140,
+                         use_ali=True, verbose=False):
+    """Switch-free emergent line profile (F/F_cont) for one line.
+
+    r, v, T_gas, n_e : per-zone state (cgs; v = radial speed [cm/s]).
+    line : dict from mc_multi_line line-input extraction — needs
+           'lambda_rest'[Å], 'tau_zone', 'S_zone', 'n_lower_zone', 'A_ul',
+           'g_l', 'g_u'.
+    R_phot, T_phot : photosphere radius [cm] and temperature [K].
+    Returns (lam_grid_AA, F_norm).
+
+    Pipeline: NLTE creation source S_zone → nonlocal ALI scattering source
+    S(r)=(1-ε)J̄+ε·S_zone → gate-free observer-frame ray-trace F(v_obs) →
+    electron-scattering redistribution (τ_es wings). No homology gate anywhere.
+    """
+    r = np.asarray(r, float); v = np.asarray(v, float)
+    T_gas = np.maximum(np.asarray(T_gas, float), 1.0)
+    n_e = np.maximum(np.asarray(n_e, float), 0.0)
+    lam0 = float(line['lambda_rest'])
+    nu0 = _C_CGS / (lam0 * 1e-8)
+    A_ul = float(line['A_ul']); g_l = float(line['g_l']); g_u = float(line['g_u'])
+    tau_zone = np.maximum(np.asarray(line['tau_zone'], float), 0.0)
+    S_zone = np.asarray(line['S_zone'], float)          # NLTE source (erg/s/cm²/Hz/sr)
+
+    Ic = _planck_nu(nu0, T_phot)                        # continuum disk intensity
+    if not (Ic > 0):
+        Ic = 1.0
+
+    # --- local line opacity χ_line [cm^-1] from the Sobolev τ and the velocity
+    #     gradient: a photon crossing the resonance accumulates ≈ τ_zone at line
+    #     centre, i.e. χ0·(√π·vth)/|dv/dr| = τ_zone  →  χ0 = τ_zone·|dv/dr|/(√π·vth).
+    vth = np.sqrt(2.0 * _KB * T_gas / (4.0 * 1.6726e-24))    # He/H-ish thermal [cm/s]
+    vth = np.maximum(vth, vturb_kms * 1e5)                    # turbulent floor
+    with np.errstate(divide='ignore', invalid='ignore'):
+        dvdr = np.abs(np.gradient(v, r))
+    dvdr = np.where(np.isfinite(dvdr) & (dvdr > 0), dvdr, np.nanmedian(dvdr[dvdr > 0]) if np.any(dvdr > 0) else 1e-9)
+    chi_line = tau_zone * dvdr / (np.sqrt(np.pi) * vth)
+    chi_line = np.where(np.isfinite(chi_line) & (chi_line > 0), chi_line, 0.0)
+
+    # --- nonlocal ALI source: creation term = NLTE S_zone; ε = collisional
+    #     destruction fraction q_ul·n_e/(q_ul·n_e + A_ul), q_ul≈8.63e-6/(g_u√T).
+    if use_ali and np.any(chi_line > 0):
+        q_ul = 8.63e-6 / (g_u * np.sqrt(T_gas))              # cm³/s (Ω~1)
+        Cul = n_e * q_ul
+        eps = Cul / (Cul + max(A_ul, 1e-30))
+        eps = np.clip(eps, 1e-8, 1.0)
+        # radial line optical depth (cumulative from the outside inward)
+        rr = r
+        dr = np.abs(np.diff(rr, prepend=rr[0]))
+        tau_line = np.cumsum((chi_line * dr)[::-1])[::-1]     # τ increases inward
+        tau_line = np.clip(tau_line, 0.0, 1e8)
+        # Normalise the source to O(1) units (÷ Ic) so the tridiagonal solve
+        # never over/under-flows on tiny Planck-scale values; scale back after.
+        Bn = np.clip(S_zone / Ic, 0.0, 1e12)
+        # order surface→deep for the solver (surface = outer, τ small)
+        with np.errstate(over='ignore', invalid='ignore', divide='ignore'):
+            out = solve_two_level_ali(tau_line[::-1], Bn[::-1], eps[::-1],
+                                      I_top=0.0, I_bottom=1.0,
+                                      max_iter=400, tol=1e-4)
+        S_line = out['S'][::-1] * Ic
+        if not np.all(np.isfinite(S_line)):
+            S_line = S_zone
+    else:
+        S_line = S_zone
+
+    # --- gate-free emergent profile (any v-field) ---
+    if vgrid_kms is None:
+        vmax = 1.25 * float(np.max(np.abs(v))) / 1e5
+        vgrid_kms = np.linspace(-vmax, vmax, 351)
+    F = emergent_profile(r, v, S_line / Ic, chi_line, R_phot, 1.0, vgrid_kms,
+                         vth_kms=float(np.median(vth)) / 1e5, occultation=True,
+                         n_p=n_p)
+
+    # --- electron-scattering redistribution (τ_es of the overlying envelope) ---
+    dr = np.abs(np.diff(r, prepend=r[0]))
+    tau_es_r = np.cumsum((n_e * _SIGMA_T * dr)[::-1])[::-1]
+    tau_es_line = float(np.average(tau_es_r, weights=np.maximum(chi_line * dr, 1e-30))) \
+        if np.any(chi_line > 0) else 0.0
+    F = escatter_redistribute(vgrid_kms, F, tau_es_line, T_e=float(np.median(T_gas)))
+
+    lam_grid = lam0 * (1.0 + np.asarray(vgrid_kms) / _C_KMS)
+    return lam_grid, F
