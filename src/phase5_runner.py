@@ -211,10 +211,28 @@ def run_phase5_for_state(state, snap, n_packets: int = 50000,
                             and _Fdef.shape == _lam.shape):
                         _a_def = float(np.trapezoid(np.clip(_Fdef - 1.0, 0, None), _vg))
                         _a_uni = float(np.trapezoid(np.clip(_Fn - 1.0, 0, None), _vg))
-                        if _a_uni > 0 and _a_def > 0:
-                            _Fn = 1.0 + (_Fn - 1.0) * (_a_def / _a_uni)
+                        _scale = (_a_def / _a_uni) if _a_uni > 0 else 0.0
+                        if _a_uni > 0 and _a_def > 0 and 0.02 <= _scale <= 60.0:
+                            # Scale ONLY the emission excess to conserve the line
+                            # L; keep the absorption trough as the unified solver
+                            # computes it (its depth is physically bounded [0,1] by
+                            # the line optical depth, independent of the emission
+                            # strength — scaling it too would drive F<0). Floor F≥0.
+                            # The scale is capped at 60×: real He I lines emit
+                            # 12–43× less in the unified solver's native amplitude
+                            # than the MC default (a source-function normalisation
+                            # difference — we adopt the unified SHAPE and rescale to
+                            # the validated He-NLTE strength), so they must pass. But
+                            # truly negligible subordinate lines (Paα/Paβ, scale
+                            # 400–1100×) are pure numerical noise the unified solver
+                            # barely emits; a wild rescale would spike F, so those
+                            # keep the validated default shape instead.
+                            _exc = _Fn - 1.0
+                            _emis = np.clip(_exc, 0.0, None) * _scale
+                            _absb = np.clip(_exc, None, 0.0)
+                            _Fn = np.clip(1.0 + _emis + _absb, 0.0, None)
                         else:
-                            raise ValueError("degenerate EW match")
+                            raise ValueError(f"EW-match scale {_scale:.2g} out of range")
                         _sp['F_norm'] = _Fn
                         if 'F_norm_corrected' in _sp:
                             _sp['F_norm_corrected'] = _Fn.copy()
@@ -235,7 +253,7 @@ def run_phase5_for_state(state, snap, n_packets: int = 50000,
     # whether the gate downgraded the profile SHAPE to MC. So a IIn run with
     # --line-profile-method formal gets MC shapes (correct for the regime) but
     # per-line recombination-budget strengths (no empirical Hα anchor).
-    if requested_method == 'formal':
+    if requested_method in ('formal', 'unified'):
         _apply_recombination_budget(spectra, merged, production_halpha,
                                     verbose=verbose, saturated_rt=saturated_rt)
         correction_factor = None

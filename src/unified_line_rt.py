@@ -344,6 +344,18 @@ def _planck_nu(nu, T):
     return 2.0 * _H_PL * nu ** 3 / _C_CGS ** 2 / np.expm1(x)
 
 
+def _planck_lam(lam0_AA, T):
+    """B_λ(T) [erg/s/cm²/Å/sr] — MUST match the pipeline's source-function units
+    (mc_multi_line._construct_source_function returns S per Å). Using a per-Hz
+    Planck here mismatches S_zone by λ²/c and corrupts the S/continuum balance
+    (→ emission where P-Cygni absorption is physical)."""
+    T = max(float(T), 1.0)
+    lam_cm = lam0_AA * 1e-8
+    x = _H_PL * _C_CGS / (lam_cm * _KB * T)
+    x = np.clip(x, 1e-8, 700.0)
+    return (2.0 * _H_PL * _C_CGS ** 2 / lam_cm ** 5) / np.expm1(x) * 1e-8
+
+
 def unified_line_profile(r, v, T_gas, n_e, line, R_phot, T_phot,
                          vgrid_kms=None, vturb_kms=25.0, n_p=140,
                          use_ali=True, verbose=False):
@@ -369,7 +381,7 @@ def unified_line_profile(r, v, T_gas, n_e, line, R_phot, T_phot,
     tau_zone = np.maximum(np.asarray(line['tau_zone'], float), 0.0)
     S_zone = np.asarray(line['S_zone'], float)          # NLTE source (erg/s/cm²/Hz/sr)
 
-    Ic = _planck_nu(nu0, T_phot)                        # continuum disk intensity
+    Ic = _planck_lam(lam0, T_phot)                      # continuum disk (per-Å, matches S_zone)
     if not (Ic > 0):
         Ic = 1.0
 
@@ -414,8 +426,16 @@ def unified_line_profile(r, v, T_gas, n_e, line, R_phot, T_phot,
     if vgrid_kms is None:
         vmax = 1.25 * float(np.max(np.abs(v))) / 1e5
         vgrid_kms = np.linspace(-vmax, vmax, 351)
+    # Doppler width for the ray-trace: the thermal/turbulent vth, but floored at
+    # ~1.5× the velocity-grid pixel. A line cannot be resolved below one spectral
+    # bin, and — more physically — the intra-zone velocity shear |dv/dr|·dr across
+    # a STELLA zone (hundreds–thousands of km/s in SN ejecta) already exceeds the
+    # 25 km/s turbulent floor, so a sub-pixel thermal width both under-broadens and
+    # ALIASES (the exp(-x²) resonance jumps between grid cells → spiky profile).
+    _dv_grid = float(np.median(np.abs(np.diff(np.asarray(vgrid_kms, float)))))
+    _vth_prof = max(float(np.median(vth)) / 1e5, 3.0 * _dv_grid)
     F = emergent_profile(r, v, S_line / Ic, chi_line, R_phot, 1.0, vgrid_kms,
-                         vth_kms=float(np.median(vth)) / 1e5, occultation=True,
+                         vth_kms=_vth_prof, occultation=True,
                          n_p=n_p)
 
     # --- electron-scattering redistribution (τ_es of the overlying envelope) ---
@@ -424,6 +444,22 @@ def unified_line_profile(r, v, T_gas, n_e, line, R_phot, T_phot,
     tau_es_line = float(np.average(tau_es_r, weights=np.maximum(chi_line * dr, 1e-30))) \
         if np.any(chi_line > 0) else 0.0
     F = escatter_redistribute(vgrid_kms, F, tau_es_line, T_e=float(np.median(T_gas)))
+
+    # final light Gaussian smoothing (σ ≈ 1.5 grid pixels) to remove any residual
+    # ray-trace sampling structure below the resolution — photon-conserving on the
+    # line excess (the continuum baseline is untouched). Physically, the profile
+    # carries no information below ~a resolution element.
+    _exc = F - 1.0
+    _sig_pix = 2.5
+    _hw = int(np.ceil(3.0 * _sig_pix))
+    _kx = np.arange(-_hw, _hw + 1)
+    _kern = np.exp(-0.5 * (_kx / _sig_pix) ** 2); _kern /= _kern.sum()
+    _exc_s = np.convolve(_exc, _kern, mode='same')
+    # renormalise to conserve the integrated excess (area = EW proxy)
+    _a0 = float(np.trapezoid(_exc, vgrid_kms)); _a1 = float(np.trapezoid(_exc_s, vgrid_kms))
+    if _a1 != 0 and np.isfinite(_a0 / _a1):
+        _exc_s *= (_a0 / _a1)
+    F = 1.0 + _exc_s
 
     lam_grid = lam0 * (1.0 + np.asarray(vgrid_kms) / _C_KMS)
     return lam_grid, F
