@@ -198,3 +198,128 @@ def _ng_accelerate(s2, s1, s0):
     b = float(np.sum(q1 * q0)) / A
     b = np.clip(b, -2.0, 2.0)
     return s0 + b * (s1 - s0)
+
+
+# ===========================================================================
+# PHASE 1 — gate-free emergent profile + electron-scattering redistribution
+# ===========================================================================
+_C_KMS = 2.99792458e5
+_KB = 1.380649e-16
+_ME = 9.1093837e-28
+
+
+def emergent_profile(r, v, S_line, chi_line, R_phot, I_cont, vgrid_kms,
+                     vth_kms=20.0, occultation=True, n_p=160):
+    """General observer-frame ray-traced emergent line profile — valid for ANY
+    velocity field v(r) (no Sobolev/homology assumption; this is what makes the
+    treatment switch-free).
+
+    r, v        : radius [cm], radial velocity magnitude [cm/s] (expansion, ≥0).
+    S_line      : line source function per zone (same units as I_cont) — the
+                  NONLOCAL ALI source (not a local Sobolev value).
+    chi_line    : line opacity per zone [cm^-1] (line-centre; a local Doppler
+                  profile φ of width vth_kms is applied along the ray).
+    R_phot      : photospheric disk radius [cm] (continuum I_cont for p<R_phot).
+    I_cont      : continuum specific intensity of the photospheric disk.
+    vgrid_kms   : observed-velocity grid [km/s] (v_obs>0 = redshift).
+    Returns F(v_obs) in units of the continuum-disk flux (F/F_cont), on vgrid_kms.
+
+    Sign convention: observer at +z; a front-side (z>0) expanding shell moves
+    toward the observer → blueshift (v_obs<0). Line resonance at v_obs where the
+    line-of-sight velocity −v·z/r ≈ v_obs (spread by the thermal width).
+    """
+    r = np.asarray(r, float); v = np.asarray(v, float)
+    S_line = np.asarray(S_line, float); chi_line = np.asarray(chi_line, float)
+    Rout = float(r[-1])
+    vgrid = np.asarray(vgrid_kms, float)
+    nvo = vgrid.size
+    F = np.zeros(nvo)
+
+    p = np.linspace(1e-3 * Rout, Rout, n_p)
+    dp = p[1] - p[0]
+    # continuum disk normalisation (flat disk of radius R_phot, intensity I_cont)
+    Fc = np.sum(np.where(p < R_phot, I_cont, 0.0) * 2.0 * np.pi * p) * dp
+    if Fc <= 0:
+        Fc = 1.0
+
+    def zinterp(rr, arr):
+        return np.interp(rr, r, arr, left=arr[0], right=0.0)
+
+    inv_vth = 1.0 / max(vth_kms, 1e-3)
+    for j, pj in enumerate(p):
+        # line of sight z from back (-zmax) to front (+zmax); observer at +z.
+        zmax = np.sqrt(max(Rout * Rout - pj * pj, 0.0))
+        if zmax <= 0:
+            continue
+        nz = 400
+        z = np.linspace(-zmax, zmax, nz)
+        rr = np.sqrt(pj * pj + z * z)
+        vr = zinterp(rr, v) / 1e5                     # km/s radial
+        vlos = -vr * (z / np.maximum(rr, 1e-30))      # km/s toward observer (blue<0)
+        chi = zinterp(rr, chi_line)
+        Sl = zinterp(rr, S_line)
+        dz = z[1] - z[0]
+        # background intensity entering the BACK of the ray:
+        #  the photospheric disk shines only through impact parameters p<R_phot,
+        #  from the far side — it is the boundary condition at z=-zmax if p<R_phot
+        #  AND the near-side hemisphere doesn't occult it (handled by integrating
+        #  through). For p<R_phot the ray starts on the photosphere.
+        on_disk = pj < R_phot
+        # Occultation: for a ray crossing the photospheric disk (p<R_phot) the
+        # far/back hemisphere (z<0) is hidden behind the disk; emission starts at
+        # the disk (I = I_cont) and integrates the near hemisphere. Off-disk rays
+        # (p≥R_phot) see the whole line of sight with no continuum background.
+        Iv = _ray_intensity(z, vlos, chi, Sl, vgrid, inv_vth, dz,
+                            I_start=(I_cont if on_disk else 0.0),
+                            occult=(occultation and on_disk))
+        F += Iv * 2.0 * np.pi * pj * dp
+    return F / Fc
+
+
+def _ray_intensity(z, vlos, chi, Sl, vgrid, inv_vth, dz, I_start, occult):
+    """Formal solution I(v_obs) along one impact-parameter ray, all v_obs at once.
+    Integrates from back (z<0) to front (z>0, observer). Returns I on vgrid."""
+    nvo = vgrid.size
+    I = np.full(nvo, I_start, float)
+    for k in range(z.size):
+        if occult and z[k] < 0:
+            continue
+        x = (vgrid - vlos[k]) * inv_vth
+        dtau = chi[k] * np.exp(-x * x) * dz
+        e = np.exp(-dtau)
+        I = I * e + Sl[k] * (1.0 - e)
+    return I
+
+
+def escatter_redistribute(vgrid_kms, F, tau_es, T_e=1e4):
+    """Convolve an intrinsic line profile with the Thomson electron-scattering
+    redistribution kernel of a scattering envelope of optical depth tau_es.
+
+    Thomson scattering conserves photons but random-walks them in frequency by
+    the electron thermal Doppler width per scatter; after ~N≈τ_es(1+τ_es) scatters
+    the cumulative shift builds the broad, roughly symmetric wings that DEFINE
+    dense-CSM (IIn/PPISN) profiles. Kernel: Gaussian of width
+        σ_v = v_th,e · sqrt(N),   v_th,e = sqrt(2 k T_e / m_e)   [km/s]
+    Photon number (∫F dv over the line excess) is conserved to machine precision.
+    tau_es→0 ⇒ identity. This is the leading-order redistribution; the small
+    red-ward recoil asymmetry is a later refinement.
+    """
+    vgrid = np.asarray(vgrid_kms, float)
+    F = np.asarray(F, float)
+    if tau_es <= 1e-3 or vgrid.size < 5:
+        return F.copy()
+    vth_e = np.sqrt(2.0 * _KB * T_e / _ME) / 1e5      # km/s
+    N = tau_es * (1.0 + tau_es)
+    sig = vth_e * np.sqrt(N)
+    dv = float(np.mean(np.diff(vgrid)))
+    if dv <= 0 or sig <= 0:
+        return F.copy()
+    # cap the kernel half-width to fit the grid so the convolution always returns
+    # len(F) (np.convolve 'same' otherwise returns the longer kernel length).
+    half = int(min(max(4, np.ceil(5 * sig / dv)), (vgrid.size - 1) // 2))
+    kx = np.arange(-half, half + 1) * dv
+    ker = np.exp(-0.5 * (kx / sig) ** 2)
+    ker /= ker.sum()
+    excess = F - 1.0                                   # scatter only the line photons
+    conv = np.convolve(excess, ker, mode='same')
+    return 1.0 + conv
