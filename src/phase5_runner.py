@@ -225,6 +225,25 @@ def run_phase5_for_state(state, snap, n_packets: int = 50000,
                 except Exception as _e:
                     if verbose:
                         print(f"[phase5][unified] {_ln} kept default shape ({_e})")
+                # Continuum-collapse safety net (unified mode only): if the line
+                # display is STILL unphysical after the fallback — i.e. BOTH the
+                # unified shape and the MC-base default exceed the ceiling (late
+                # post-interaction/nebular epochs, documented not-paper-ready;
+                # head avoided this only because its gate chose the formal shape
+                # there) — show a flat continuum. The line's L_line_corrected in
+                # the table remains valid ("quote L_line, not peak-F").
+                _Ffin = np.asarray(_sp.get('F_norm_corrected',
+                                           _sp.get('F_norm')), float)
+                if _Ffin.size and (not np.all(np.isfinite(_Ffin))
+                                   or float(np.nanmax(_Ffin)) > 150.0):
+                    _flat = np.ones_like(_Ffin)
+                    _sp['F_norm'] = _flat
+                    if 'F_norm_corrected' in _sp:
+                        _sp['F_norm_corrected'] = _flat.copy()
+                    _sp['profile_method'] = 'collapse-flat'
+                    if verbose:
+                        print(f"[phase5][unified] {_ln} display flattened "
+                              f"(collapse epoch: unified AND default >150)")
             if verbose:
                 print(f"[phase5][unified] nonlocal RT applied to {n_ok} H/He lines "
                       f"(switch-free; gate bypassed).")
