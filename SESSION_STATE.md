@@ -96,3 +96,4 @@ regex (GO1 pre-max); registry expanded to 39 models. Key commits: `a86e1a9`,
    `/tmp/reg_compare.py`, then continue Stage 2→4 per P2 #7.
 5. The full grids are done — **do NOT re-run all 40 models** unless explicitly
    regenerating the final paper dataset; validation uses A1/A4/C4 at a few epochs.
+--- Unified v2 (2026-07-04): production complete; see FUTURE_WORK ✅ UNIFIED LINE RT v2 block + analysis_unified/ ---

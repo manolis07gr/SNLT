@@ -70,9 +70,50 @@ which over-pumps recombination lines by ~10³× — so the residual ~factor-2
 (nonlocal escape suppression) is still an explicit uncertainty, not papered over.
 `ep_source_function()` is retained as a diagnostic / ALI foundation.
 
-**◑ UNIFIED SWITCH-FREE LINE RT — engine built + validated, but the profile
-coupling is NOT production-ready (opt-in `--line-profile-method unified`;
-`src/unified_line_rt.py`, `src/validate_unified_rt.py`; committed 7d414d4).**
+**✅ UNIFIED LINE RT v2 — IMPLEMENTED + VALIDATED + PRODUCTION (opt-in
+`--line-profile-method unified`; commits edf90c2 + 4c6fb94).**
+v2 design: ONE observer-frame ray-trace transport (any velocity field) + ONE
+continuous source `S = (1−w)·S_scatter + w·S_trap` (disk units):
+`S_scatter = [(1−ε_eff)βW + ε_eff·B(T_gas)/Ic + C_rec] / [ε_eff + β(1−ε_eff)]`
+(Sobolev-regularized two-level scattering: geometric dilution W — the formal
+solver's validated J̄ limit — thermal creation, first-principles H-recombination
+creation C_rec=η/χ, destruction ε_eff = ε_coll + photoionization of the upper
+level by the diluted photospheric field); `S_trap = clip(S_zone/Ic, 0, 150)`
+(the NLTE source, valid where resonance trapping is real);
+`w = homology_trap_weight(r,v)` — the CONTINUOUS Sobolev-validity measure
+(A1 w=0.01 → scattering P-Cygni; A11 w=1.0 → trapped emission), replacing the
+binary gate cliff for the unified mode while honoring the gate physics.
+VALIDATED: 8/8 analytic limits; 4-regime morphology QA (A1 IIP Hα P-Cygni
+1.365/0.847 vs head 1.10/0.80 & SuperLite ≈1.3; A11 IIn emission 8.08 no-trough
+FWHM 620 vs head 16.4/420; GO1 Icn He physical + C III 1909 + H-free Hα null;
+PP1 24 lines bounded); 15-cell backtest no-worse-than-head, dominant lines
+identical. PRODUCTION: full 40-model head-matched-epoch grid in unified mode
+(~1100 epochs), zero failures (Jul-2026; interrupted once by a machine reboot at
+27/40 and cleanly resumed). IMPACT: dominant-feature rankings vs analysis_head
+unchanged in 95.6% of 1101 model-epochs; ALL 48 flips are non-unified
+(46 metal-line Cloudy/CHIANTI run-to-run intermittency — confirmed ~6-dex
+CHIANTI-fallback signatures on C IV 1549 — and 2 H/He near-ties at documented-
+untrusted late epochs). Morphology now deterministic and physical per regime:
+A1 P-Cygni EVOLUTION preserved d010–120 (peak 1.06→1.45, trough 0.99→0.83);
+MC noise eliminated where head used MC (C4 He I roughness 0.41→0.004, ≈100×).
+HONEST LIMITS: S_trap display cap 150; C_rec for H lines only; w is a
+global-flow measure (a zone-local closed-form source discriminator was shown
+impossible at the pipeline's NLTE fidelity — each candidate fixed one regime
+and broke the other); C-series He amplitudes remain within the documented trust
+ceiling; A1/B1 day<010 unified epochs hang (guard: run head-matched epoch sets);
+`collapse-flat` display at late/nebular continuum-collapse epochs where BOTH the
+unified and MC-base amplitudes are unphysical (L_line table stays valid — quote
+L, not peak-F); the profile-display ↔ L_line decoupling of the pipeline is
+retained. DATA-STATE NOTE (Jul-2026 reboot): the /tmp head-npz backup was lost;
+tracked npz (441) restored from git, C4–C9/C15/GO1 restored from
+`~/Documents/snlt_head_backup/`; untracked A4-A15/B4-B15 display npz in
+input_models are now the v2 versions (head regenerable via a default-mode
+rerun; `analysis_head/` CSVs remain the authoritative head record).
+v2 analysis artifacts: `analysis_unified/` + `obs_comparison/unified_v2_*.png`.
+
+*(superseded v1 notes below, kept for the diagnostic record)*
+**◑ v1 record — engine built + validated, but the v1 profile
+coupling was NOT production-ready (committed 7d414d4).**
 The ALI two-level engine passes 8/8 analytic limits (√ε, LTE, thermalization,
 thin escape, deep convergence, symmetric thin emission, P-Cygni, e-scatter). BUT
 a full-grid test exposed that it does NOT reproduce the observed profiles on real
