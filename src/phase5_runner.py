@@ -186,6 +186,10 @@ def run_phase5_for_state(state, snap, n_packets: int = 50000,
                 _fd = np.asarray(_sp.get('F_norm_corrected', _sp.get('F_norm')), float)
                 _areas[_ln] = float(np.sum(np.clip(_fd - 1.0, 0, None)))
             _a_floor = 1e-3 * (max(_areas.values()) if _areas else 0.0)
+            # He-ion fraction hint for the opt-in --urt-he-rec creation term:
+            # in an H-free model (Halpha area negligible) the electrons come
+            # from He -> n_He+ ~ n_e; in H-rich, n_He+ ~ 0.1 n_e.
+            _he_fi = 1.0 if _areas.get('Halpha', 0.0) <= _a_floor else 0.1
             n_ok = 0
             for _ln, _sp in spectra.items():
                 if _ln not in p5.LINE_CATALOG:
@@ -197,7 +201,8 @@ def run_phase5_for_state(state, snap, n_packets: int = 50000,
                     _lam = np.asarray(_sp['lambda_AA'], float)
                     _vg = (_lam / float(_li['lambda_rest']) - 1.0) * 2.99792458e5
                     _, _Fn = _urt.unified_line_profile(_r, _v, _T, _ne, _li,
-                                                       _Rph, _Tph, vgrid_kms=_vg)
+                                                       _Rph, _Tph, vgrid_kms=_vg,
+                                                       he_f_ion=_he_fi)
                     # The unified v2 solver provides the MORPHOLOGY natively at a
                     # physical F/F_cont amplitude (continuous scatter/trap source
                     # blend, validated per regime: A1 IIP P-Cygni, A11 IIn

@@ -336,7 +336,7 @@ def _ray_intensity(z, vlos, chi, Sl, vgrid, inv_vth, dz, I_start, occult):
     return I
 
 
-def escatter_redistribute(vgrid_kms, F, tau_es, T_e=1e4):
+def escatter_redistribute(vgrid_kms, F, tau_es, T_e=1e4, v_bulk_kms=0.0):
     """Convolve an intrinsic line profile with the Thomson electron-scattering
     redistribution kernel of a scattering envelope of optical depth tau_es.
 
@@ -346,8 +346,15 @@ def escatter_redistribute(vgrid_kms, F, tau_es, T_e=1e4):
     dense-CSM (IIn/PPISN) profiles. Kernel: Gaussian of width
         σ_v = v_th,e · sqrt(N),   v_th,e = sqrt(2 k T_e / m_e)   [km/s]
     Photon number (∫F dv over the line excess) is conserved to machine precision.
-    tau_es→0 ⇒ identity. This is the leading-order redistribution; the small
-    red-ward recoil asymmetry is a later refinement.
+    tau_es→0 ⇒ identity.
+
+    v_bulk_kms > 0 (opt-in, --urt-aniso-es): adds the BULK-EXPANSION asymmetry
+    (Chugai 2001; Huang & Chevalier 2018) — photons scattering in an expanding
+    flow are systematically redshifted, building the observed red-skewed IIn
+    wing. Modeled as a one-sided exponential tail (redward, v_obs>0) of scale
+        x0 = v_bulk · min(τ_es, 3)          [km/s]
+    convolved with the thermal Gaussian; photon-conserving; v_bulk=0 ⇒ exactly
+    the symmetric kernel (default path unchanged).
     """
     vgrid = np.asarray(vgrid_kms, float)
     F = np.asarray(F, float)
@@ -359,11 +366,17 @@ def escatter_redistribute(vgrid_kms, F, tau_es, T_e=1e4):
     dv = float(np.mean(np.diff(vgrid)))
     if dv <= 0 or sig <= 0:
         return F.copy()
+    x0 = float(v_bulk_kms) * min(tau_es, 3.0) if v_bulk_kms > 0 else 0.0
     # cap the kernel half-width to fit the grid so the convolution always returns
     # len(F) (np.convolve 'same' otherwise returns the longer kernel length).
-    half = int(min(max(4, np.ceil(5 * sig / dv)), (vgrid.size - 1) // 2))
+    half = int(min(max(4, np.ceil((5 * sig + 8 * x0) / dv)), (vgrid.size - 1) // 2))
     kx = np.arange(-half, half + 1) * dv
     ker = np.exp(-0.5 * (kx / sig) ** 2)
+    if x0 > dv * 0.25:
+        # red-sided exponential (v_obs>0 = redshift), then combine by convolution
+        ker_r = np.where(kx >= 0, np.exp(-kx / x0), 0.0)
+        ker_r /= ker_r.sum()
+        ker = np.convolve(ker, ker_r, mode='same')
     ker /= ker.sum()
     excess = F - 1.0                                   # scatter only the line photons
     conv = np.convolve(excess, ker, mode='same')
@@ -427,6 +440,57 @@ def _gamma_pi_bb(n, T):
 _H_LINE_REC = {6562.8: (3, 1.17e-13), 4861.3: (4, 3.03e-14), 4340.5: (5, 1.2e-14),
                18751.0: (4, 3.0e-14), 12818.1: (5, 1.4e-14)}
 
+# He I recombination creation (opt-in, --urt-he-rec): lambda_rest ->
+# (n_eff, alpha_eff at 1e4 K [cm^3/s]). alpha_eff = case-B effective
+# recombination into the line (provisional, Benjamin+ 1999-level accuracy —
+# morphology only; the STRENGTH stays the He-NLTE budget). n_eff = hydrogenic
+# effective quantum number of the UPPER level from its binding energy, used for
+# the photoionization-destruction term (same self-regulating structure that
+# validated for H). eta = h nu/(4 pi) * alpha_eff * n_e * n_He+ with
+# n_He+ = f_ion * n_e (f_ion ~ 0.1 H-rich, ~1 H-free; passed by the caller).
+_HE_LINE_REC = {5875.6: (3.0, 4.4e-14), 6678.2: (3.0, 1.3e-14),
+                7065.2: (3.0, 6.0e-15), 10830.3: (1.9, 9.0e-15)}
+
+
+def zone_trap_weight(r, v, nwin=None):
+    """Zone-RESOLVED trapping weight w_i in [0,1] (opt-in, --urt-zone-w).
+
+    Windowed version of homology_trap_weight: for each zone, the homology
+    spread of r/v and the |dv|-magnitude-weighted reversal fraction are
+    evaluated over a local window, so a STRATIFIED snapshot (homologous inner
+    ejecta + quasi-static dense shell — the mid-transition IIn geometry) gets a
+    per-zone scatter/trap split instead of one global blend. Magnitude-weighted
+    reversals make the measure immune to single-zone velocity noise. Reduces to
+    ~the global weight for regime-pure flows; lightly smoothed to avoid window-
+    edge jitter.
+    """
+    r = np.asarray(r, float); v = np.asarray(v, float)
+    n = r.size
+    if n < 5:
+        return np.full(n, homology_trap_weight(r, v))
+    if nwin is None:
+        nwin = max(3, n // 10)
+    w = np.empty(n)
+    rv = r / np.maximum(np.abs(v), 1e-30)
+    dv = np.diff(v)
+    adv = np.abs(dv)
+    for i in range(n):
+        lo = max(0, i - nwin); hi = min(n, i + nwin + 1)
+        seg = rv[lo:hi]
+        spread = float(np.std(seg) / np.maximum(np.median(seg), 1e-30))
+        dlo = max(0, lo); dhi = min(dv.size, hi - 1)
+        if dhi > dlo and adv[dlo:dhi].sum() > 0:
+            frev = float(adv[dlo:dhi][dv[dlo:dhi] < 0].sum()
+                         / adv[dlo:dhi].sum())
+        else:
+            frev = 0.0
+        w[i] = np.clip(max(spread / 0.5, frev / 0.10), 0.0, 1.0)
+    # light smoothing (box of ~nwin/2) against window-edge jitter
+    k = max(1, nwin // 2)
+    ker = np.ones(2 * k + 1) / (2 * k + 1)
+    w = np.convolve(np.pad(w, k, mode='edge'), ker, mode='valid')
+    return np.clip(w, 0.0, 1.0)
+
 
 def homology_trap_weight(r, v):
     """Continuous Sobolev-validity weight w in [0,1] for the SOURCE blend.
@@ -452,7 +516,7 @@ def homology_trap_weight(r, v):
 
 def unified_line_profile(r, v, T_gas, n_e, line, R_phot, T_phot,
                          vgrid_kms=None, vturb_kms=25.0, n_p=140,
-                         use_ali=True, verbose=False):
+                         use_ali=True, verbose=False, he_f_ion=None):
     """Unified emergent line profile (F/F_cont) for one line — one transport,
     one continuous source, valid across all regimes.
 
@@ -540,15 +604,40 @@ def unified_line_profile(r, v, T_gas, n_e, line, R_phot, T_phot,
             _G = _gamma_pi_bb(_nup, T_phot)
             eps_pi = W * _G / (W * _G + max(A_ul, 1e-30))
             break
+    else:
+        # He I recombination creation (opt-in --urt-he-rec): same structure as
+        # the H term with n_He+ = f_ion·n_e, plus the SAME photoionization-
+        # destruction regulator (hydrogenic n_eff of the upper level) that keeps
+        # the homologous scattering limit from over-amplifying.
+        if os.environ.get('SNLT_URT_HE_REC'):
+            _fi = 0.1 if he_f_ion is None else float(he_f_ion)
+            for _lamHe, (_neff, _aeff) in _HE_LINE_REC.items():
+                if abs(lam0 - _lamHe) < 5.0:
+                    a_T = _aeff * (np.maximum(T_gas, 100.0) / 1e4) ** -1.0
+                    eta = _H_PL * nu0 / (4.0 * np.pi) * a_T * n_e * (_fi * n_e)
+                    dlamD = lam0 * vth / _C_CGS
+                    Cn = np.where(chi_line > 0,
+                                  eta / (np.sqrt(np.pi) * np.maximum(dlamD, 1e-10))
+                                  / np.maximum(chi_line, 1e-30) / Ic, 0.0)
+                    _G = _gamma_pi_bb(_neff, T_phot)
+                    eps_pi = W * _G / (W * _G + max(A_ul, 1e-30))
+                    break
     eps_eff = np.clip(eps + eps_pi, 1e-12, 1.0)
     S_scatter = ((1.0 - eps_eff) * beta * W + eps_eff * Bn + Cn) \
         / np.maximum(eps_eff + beta * (1.0 - eps_eff), 1e-12)
     S_trap = np.clip(S_zone / Ic, 0.0, 150.0)
-    w_trap = homology_trap_weight(r, v)
+    if os.environ.get('SNLT_URT_ZONE_W'):
+        # zone-RESOLVED trap weight (opt-in --urt-zone-w): stratified snapshots
+        # (homologous ejecta + quasi-static shell) get a per-zone source split.
+        w_trap = zone_trap_weight(r, v)
+        _w_rep = float(np.median(w_trap))
+    else:
+        w_trap = homology_trap_weight(r, v)
+        _w_rep = w_trap
     S_disk = (1.0 - w_trap) * S_scatter + w_trap * S_trap      # disk units (÷Ic)
     S_disk = np.where(np.isfinite(S_disk) & (S_disk >= 0), S_disk, 0.0)
     if verbose:
-        print(f"[urt] λ{lam0:.0f}: w_trap={w_trap:.2f} eps_pi={np.max(np.atleast_1d(eps_pi)):.1e} "
+        print(f"[urt] λ{lam0:.0f}: w_trap={_w_rep:.2f} eps_pi={np.max(np.atleast_1d(eps_pi)):.1e} "
               f"S/Ic=[{S_disk.min():.3g},{S_disk.max():.3g}]")
     # Debug dump: capture the exact solver inputs for standalone iteration
     # (SNLT_URT_DUMP=<dir>)
@@ -585,7 +674,13 @@ def unified_line_profile(r, v, T_gas, n_e, line, R_phot, T_phot,
     tau_es_r = np.cumsum((n_e * _SIGMA_T * dr)[::-1])[::-1]
     tau_es_line = float(np.average(tau_es_r, weights=np.maximum(chi_line * dr, 1e-30))) \
         if np.any(chi_line > 0) else 0.0
-    F = escatter_redistribute(vgrid_kms, F, tau_es_line, T_e=float(np.median(T_gas)))
+    # bulk-expansion red-skew (opt-in --urt-aniso-es): characteristic flow speed
+    # of the line-forming gas drives the one-sided redward tail.
+    _vb = 0.0
+    if os.environ.get('SNLT_URT_ANISO_ES') and np.any(chi_line > 0):
+        _vb = float(np.average(np.abs(v), weights=np.maximum(chi_line * dr, 1e-30))) / 1e5
+    F = escatter_redistribute(vgrid_kms, F, tau_es_line, T_e=float(np.median(T_gas)),
+                              v_bulk_kms=_vb)
 
     # final light Gaussian smoothing (σ ≈ 1.5 grid pixels) to remove any residual
     # ray-trace sampling structure below the resolution — photon-conserving on the

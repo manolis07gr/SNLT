@@ -173,6 +173,51 @@ def t8_escatter_conserve_broaden():
     return good
 
 
+def t9_aniso_escatter():
+    print("T9  anisotropic e-scatter (bulk red-skew): conserve + skew + symmetric limit:")
+    vg = np.linspace(-6e4, 6e4, 2401)
+    F0 = 1.0 + 2.0 * np.exp(-0.5 * (vg / 300.0) ** 2)
+    area0 = np.trapezoid(F0 - 1, vg)
+    Fs = escatter_redistribute(vg, F0, tau_es=3.0, T_e=1e4)
+    Fs2 = escatter_redistribute(vg, F0, tau_es=3.0, T_e=1e4, v_bulk_kms=0.0)
+    ident = float(np.max(np.abs(Fs - Fs2)))
+    Fa = escatter_redistribute(vg, F0, tau_es=3.0, T_e=1e4, v_bulk_kms=500.0)
+    area_a = np.trapezoid(Fa - 1, vg)
+    cons = abs(area_a / area0 - 1) < 0.02
+    e = np.clip(Fa - 1, 0, None)
+    cen = float(np.trapezoid(e * vg, vg) / np.trapezoid(e, vg))
+    es = np.clip(Fs - 1, 0, None)
+    cen_s = float(np.trapezoid(es * vg, vg) / np.trapezoid(es, vg))
+    red = cen > cen_s + 100.0
+    good = ident < 1e-12 and cons and red
+    print(f"   v_bulk=0 identity={ident:.1e}; conserve={cons}; "
+          f"centroid {cen_s:.0f}->{cen:.0f} km/s (redward={red})  "
+          f"[{'ok' if good else 'FAIL'}]")
+    return good
+
+
+def t10_zone_trap_weight():
+    print("T10 zone-resolved trap weight: regime-pure limits + stratified split:")
+    from unified_line_rt import zone_trap_weight
+    t_exp = 5 * 86400.0
+    r1 = np.linspace(1e15, 6e15, 120); v1 = r1 / t_exp
+    w1 = zone_trap_weight(r1, v1)
+    r2 = np.linspace(2.8e15, 3.2e15, 40)
+    v2 = np.linspace(282e5, 238e5, 40)
+    w2 = zone_trap_weight(r2, v2)
+    r3 = np.concatenate([r1[:80], r1[80] + np.linspace(1e13, 4e14, 40)])
+    v3 = np.concatenate([v1[:80], np.linspace(v1[80], 0.3 * v1[80], 40)])
+    w3 = zone_trap_weight(r3, v3)
+    hom_ok = float(np.median(w1)) < 0.15
+    trap_ok = float(np.median(w2)) > 0.85
+    split_ok = float(np.median(w3[:60])) < 0.4 and float(np.median(w3[-25:])) > 0.6
+    good = hom_ok and trap_ok and split_ok
+    print(f"   homologous med(w)={np.median(w1):.2f}(<0.15) reversed med(w)="
+          f"{np.median(w2):.2f}(>0.85) stratified inner={np.median(w3[:60]):.2f}"
+          f"/outer={np.median(w3[-25:]):.2f}  [{'ok' if good else 'FAIL'}]")
+    return good
+
+
 if __name__ == '__main__':
     print("=" * 70)
     print(" UNIFIED LINE-RT — Phase-0 ALI + Phase-1 profile/e-scatter validation")
@@ -186,6 +231,8 @@ if __name__ == '__main__':
         'T6 thin-emission-symmetric': t6_thin_emission_symmetric(),
         'T7 pcygni-shape': t7_pcygni_shape(),
         'T8 escatter-conserve-broaden': t8_escatter_conserve_broaden(),
+        'T9 aniso-escatter': t9_aniso_escatter(),
+        'T10 zone-trap-weight': t10_zone_trap_weight(),
     }
     print("-" * 70)
     npass = sum(results.values())

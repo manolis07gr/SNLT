@@ -111,6 +111,25 @@ input_models are now the v2 versions (head regenerable via a default-mode
 rerun; `analysis_head/` CSVs remain the authoritative head record).
 v2 analysis artifacts: `analysis_unified/` + `obs_comparison/unified_v2_*.png`.
 
+**v2.1 opt-in refinements (validated, defaults OFF = v2 byte-path):**
+`--urt-he-rec` — first-principles He I recombination creation in the scattering
+limb (α_eff provisional case-B values; n_He⁺ = f_ion·n_e with f_ion auto-set
+0.1 H-rich / 1.0 H-free from the Hα-area heuristic; same photoionization-
+destruction regulator as H). `--urt-aniso-es` — Chugai-style bulk-expansion
+red-skewed electron-scattering (one-sided redward exponential tail
+x0 = v_bulk·min(τ_es,3) convolved with the thermal Gaussian; photon-conserving;
+exact symmetric limit at v_bulk=0). `--urt-zone-w` — zone-RESOLVED scatter/trap
+source weight (windowed homology measure, |dv|-magnitude-weighted reversals):
+stratified snapshots (homologous ejecta + quasi-static shell) get a per-zone
+source split. VALIDATED: analytic suite extended to 10/10 (T9 aniso kernel:
+conservation + redward centroid + symmetric identity; T10 zone weight:
+regime-pure limits 0.00/1.00 + stratified inner/outer split); flags-off
+regression vs pre-edit goldens identical within same-code MC jitter (H-free
+models bit-identical); flags-on QA: A1 IIP P-Cygni preserved (1.13/0.86),
+A11 red-skew centroid +96 km/s red/blue 4.51, C1 He I he-rec +0.05–0.20 peak
+(bounded), C4 bounded. Honest notes: He α_eff provisional; the aniso tail is a
+kernel model (not angle-dependent RT); zone-w window is a heuristic scale.
+
 *(superseded v1 notes below, kept for the diagnostic record)*
 **◑ v1 record — engine built + validated, but the v1 profile
 coupling was NOT production-ready (committed 7d414d4).**

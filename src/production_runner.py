@@ -3236,6 +3236,25 @@ def main():
                              'unchanged (still gate-authoritative MC). Opt-in: '
                              'without this flag, thick-line outputs are '
                              'byte-identical to before.')
+    # ------- Unified line-RT v2 refinements (opt-in; no effect unless
+    #         --line-profile-method unified is active; default path unchanged) --
+    parser.add_argument('--urt-he-rec', action='store_true',
+                        help='Unified v2 (opt-in): add first-principles He I '
+                             'recombination creation to the scattering-limb '
+                             'source (with the same photoionization-destruction '
+                             'regulator as H). Improves He amplitudes in '
+                             'scattering-dominated / H-free regimes.')
+    parser.add_argument('--urt-aniso-es', action='store_true',
+                        help='Unified v2 (opt-in): bulk-expansion anisotropic '
+                             'electron-scattering redistribution — adds the '
+                             'observed red-skewed IIn wing (Chugai-style '
+                             'one-sided redward tail; photon-conserving).')
+    parser.add_argument('--urt-zone-w', action='store_true',
+                        help='Unified v2 (opt-in): zone-RESOLVED scatter/trap '
+                             'source weight (windowed homology measure) — '
+                             'stratified snapshots (homologous ejecta + '
+                             'quasi-static shell) get a per-zone source split '
+                             'instead of one global blend.')
     parser.add_argument('--phase5-movie-out', type=str,
                         default='batch_lines_evolution.mp4',
                         help='Output filename for the batch multi-line '
@@ -3246,6 +3265,16 @@ def main():
                         help='Frames per second for the Phase 5 movie '
                              '(default 3). 30 epochs at 3 fps → 10 s movie.')
     args = parser.parse_args()
+
+    # Unified v2 opt-in refinements: exported as env so the flags reach
+    # unified_line_rt through any call path (single-snapshot or --batch)
+    # without threading extra parameters through the pipeline.
+    if getattr(args, 'urt_he_rec', False):
+        os.environ['SNLT_URT_HE_REC'] = '1'
+    if getattr(args, 'urt_aniso_es', False):
+        os.environ['SNLT_URT_ANISO_ES'] = '1'
+    if getattr(args, 'urt_zone_w', False):
+        os.environ['SNLT_URT_ZONE_W'] = '1'
 
     # --metal-cloudy is a strength upgrade ON the metal lines → it implies them.
     if getattr(args, 'metal_cloudy', False) and not args.metal_lines:
