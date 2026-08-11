@@ -3026,18 +3026,21 @@ def main():
                              'destruction channels. Diagnostics: per-zone '
                              'classification "2γ-dominated" vs "Lyα-dominated" '
                              'and A_eff are added to the populations diag dict.')
-    parser.add_argument('--line-profile-method', type=str, default='mc',
+    parser.add_argument('--line-profile-method', type=str, default='unified',
                         choices=['mc', 'formal', 'unified'],
-                        help="Emergent line-profile method. 'mc' (default): "
-                             "Monte-Carlo peel (continuum scatter + volumetric "
-                             "recombination). 'formal': Sobolev P-Cygni formal "
-                             "solution with scattering source function "
-                             "S_L=(1-eps)J_bar+eps*B, which removes the spurious "
-                             "blueward emission peak and over-strong amplitude of "
-                             "the thin-shell recombination channel. 'unified' "
-                             "(opt-in): switch-free nonlocal ALI RT — gate-free "
-                             "emergent profile + electron-scattering wings "
-                             "(unified_line_rt), valid across all regimes.")
+                        help="Emergent line-profile method. 'unified' (DEFAULT "
+                             "since v2.1 full-production validation, 2026-08: "
+                             "99.0%% dominant-feature agreement vs the head grid): "
+                             "switch-free nonlocal ALI RT — gate-free emergent "
+                             "profile + electron-scattering wings "
+                             "(unified_line_rt), valid across all regimes "
+                             "(IIP/Ib, IIn/CSM, Ibn, Icn, PPISN). 'mc' (legacy "
+                             "default): Monte-Carlo peel (continuum scatter + "
+                             "volumetric recombination). 'formal': Sobolev "
+                             "P-Cygni formal solution (homologous ejecta only; "
+                             "the Sobolev gate still protects dense-CSM "
+                             "snapshots). Line STRENGTHS (L_corr) are identical "
+                             "in all modes — the method sets profile SHAPE only.")
     parser.add_argument('--line-profile-method-lock', action='store_true',
                         dest='line_profile_method_lock', default=False,
                         help="Keep the line-STRENGTH policy (recombination-budget / "
@@ -3236,25 +3239,32 @@ def main():
                              'unchanged (still gate-authoritative MC). Opt-in: '
                              'without this flag, thick-line outputs are '
                              'byte-identical to before.')
-    # ------- Unified line-RT v2 refinements (opt-in; no effect unless
-    #         --line-profile-method unified is active; default path unchanged) --
-    parser.add_argument('--urt-he-rec', action='store_true',
-                        help='Unified v2 (opt-in): add first-principles He I '
-                             'recombination creation to the scattering-limb '
+    # ------- Unified line-RT v2.1 refinements (DEFAULT ON since the v2.1
+    #         full-production validation; disable with --no-urt-*; no effect
+    #         unless --line-profile-method unified is active) -------------------
+    parser.add_argument('--urt-he-rec', action=argparse.BooleanOptionalAction,
+                        default=True,
+                        help='Unified v2.1 (default ON): add first-principles '
+                             'He I recombination creation to the scattering-limb '
                              'source (with the same photoionization-destruction '
                              'regulator as H). Improves He amplitudes in '
-                             'scattering-dominated / H-free regimes.')
-    parser.add_argument('--urt-aniso-es', action='store_true',
-                        help='Unified v2 (opt-in): bulk-expansion anisotropic '
-                             'electron-scattering redistribution — adds the '
-                             'observed red-skewed IIn wing (Chugai-style '
-                             'one-sided redward tail; photon-conserving).')
-    parser.add_argument('--urt-zone-w', action='store_true',
-                        help='Unified v2 (opt-in): zone-RESOLVED scatter/trap '
-                             'source weight (windowed homology measure) — '
-                             'stratified snapshots (homologous ejecta + '
-                             'quasi-static shell) get a per-zone source split '
-                             'instead of one global blend.')
+                             'scattering-dominated / H-free regimes. '
+                             'Disable: --no-urt-he-rec.')
+    parser.add_argument('--urt-aniso-es', action=argparse.BooleanOptionalAction,
+                        default=True,
+                        help='Unified v2.1 (default ON): bulk-expansion '
+                             'anisotropic electron-scattering redistribution — '
+                             'adds the observed red-skewed IIn wing '
+                             '(Chugai-style one-sided redward tail; '
+                             'photon-conserving). Disable: --no-urt-aniso-es.')
+    parser.add_argument('--urt-zone-w', action=argparse.BooleanOptionalAction,
+                        default=True,
+                        help='Unified v2.1 (default ON): zone-RESOLVED '
+                             'scatter/trap source weight (windowed homology '
+                             'measure) — stratified snapshots (homologous '
+                             'ejecta + quasi-static shell) get a per-zone '
+                             'source split instead of one global blend. '
+                             'Disable: --no-urt-zone-w.')
     parser.add_argument('--phase5-movie-out', type=str,
                         default='batch_lines_evolution.mp4',
                         help='Output filename for the batch multi-line '

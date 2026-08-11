@@ -29,9 +29,17 @@ It was validated against the SuperLite Model A1 IIP Hα (rest-peak amplitude ≈
 - **Ionization / excitation**: per-zone H NLTE (`h_populations_nlte.py`) and He
   I / He II NLTE solvers (ionization + excitation incl. collisional channels)
   driven by the STELLA state + photoionization.
-- **Profile transport** (`mc_multi_line.py`, `formal_line_profile.py`): a Monte
-  Carlo peel-off transport for the emergent profile, plus a Sobolev
-  source-function P-Cygni ("formal") solver for homologous ejecta.
+- **Profile transport** — **DEFAULT (since 2026-08, v2.1): the unified
+  switch-free nonlocal RT** (`unified_line_rt.py`; `--line-profile-method
+  unified` + `--urt-he-rec --urt-aniso-es --urt-zone-w`, all default-ON,
+  `--no-urt-*` to disable). One observer-frame ray-trace + one continuous
+  scatter/trap source valid across ALL regimes; validated in full production
+  (99.0% dominant-feature agreement vs head; textbook morphology per regime; no
+  MC noise). Strengths (`L_corr`) are method-independent. A wall-clock guard
+  (`SNLT_URT_TIMEOUT`, 180 s/line) degrades pathological epochs to the default
+  shape. Legacy engines preserved: `mc_multi_line.py` (MC peel-off,
+  `--line-profile-method mc`) and `formal_line_profile.py` (Sobolev P-Cygni,
+  `formal`, homologous only — gate-protected).
 - **The Sobolev-validity GATE** (the central design decision): per snapshot it
   measures the homology of the velocity field
   (`sobolev_validity(r, v)` → `std(r/v)/median`, reversal fraction). If

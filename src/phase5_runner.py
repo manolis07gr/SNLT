@@ -169,6 +169,21 @@ def run_phase5_for_state(state, snap, n_packets: int = 50000,
     if requested_method == 'unified':
         try:
             import unified_line_rt as _urt
+            # Wall-clock guard (SIGALRM): degenerate snapshots (e.g. the no-CSM
+            # controls at day<10) can make the unified solver pathologically
+            # slow. With unified now the DEFAULT, a hang must degrade to the
+            # validated default shape instead of stalling the batch. Per-line
+            # budget via SNLT_URT_TIMEOUT seconds (0 disables; main thread +
+            # Unix only — otherwise the guard is skipped silently).
+            import signal as _signal
+            _urt_budget = float(os.environ.get('SNLT_URT_TIMEOUT', '180'))
+            def _urt_alarm(_s, _f):
+                raise TimeoutError('unified RT exceeded SNLT_URT_TIMEOUT')
+            try:
+                _urt_old_h = _signal.signal(_signal.SIGALRM, _urt_alarm)
+                _urt_can_alarm = _urt_budget > 0
+            except (ValueError, AttributeError):
+                _urt_can_alarm = False
             _r = np.asarray(merged.r, float)
             _v = np.abs(np.asarray(merged.v, float))
             _T = np.asarray(getattr(merged, 'T', getattr(merged, 'T_gas', None)), float)
@@ -200,9 +215,16 @@ def run_phase5_for_state(state, snap, n_packets: int = 50000,
                     _li = p5.extract_line_inputs(merged, _ln)
                     _lam = np.asarray(_sp['lambda_AA'], float)
                     _vg = (_lam / float(_li['lambda_rest']) - 1.0) * 2.99792458e5
-                    _, _Fn = _urt.unified_line_profile(_r, _v, _T, _ne, _li,
-                                                       _Rph, _Tph, vgrid_kms=_vg,
-                                                       he_f_ion=_he_fi)
+                    if _urt_can_alarm:
+                        _signal.alarm(max(1, int(_urt_budget)))
+                    try:
+                        _, _Fn = _urt.unified_line_profile(_r, _v, _T, _ne, _li,
+                                                           _Rph, _Tph,
+                                                           vgrid_kms=_vg,
+                                                           he_f_ion=_he_fi)
+                    finally:
+                        if _urt_can_alarm:
+                            _signal.alarm(0)
                     # The unified v2 solver provides the MORPHOLOGY natively at a
                     # physical F/F_cont amplitude (continuous scatter/trap source
                     # blend, validated per regime: A1 IIP P-Cygni, A11 IIn
@@ -249,6 +271,8 @@ def run_phase5_for_state(state, snap, n_packets: int = 50000,
                     if verbose:
                         print(f"[phase5][unified] {_ln} display flattened "
                               f"(collapse epoch: unified AND default >150)")
+            if _urt_can_alarm:
+                _signal.signal(_signal.SIGALRM, _urt_old_h)
             if verbose:
                 print(f"[phase5][unified] nonlocal RT applied to {n_ok} H/He lines "
                       f"(switch-free; gate bypassed).")

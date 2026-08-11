@@ -7,28 +7,82 @@ model's `mesa.day*_post_Lbol_max.data` snapshots), with the venv active.
 
 ## 1. The three commands you actually need
 
-### (a) Batch — full time series for one model
-Processes every `mesa.day*_post_Lbol_max.data` snapshot in the current directory.
-Works identically for **every regime** (IIP, IIn, stripped/Ibn) — the Sobolev
-gate picks the profile method per epoch automatically. **Do not** add
-`--line-profile-method-lock`.
+> **DEFAULT since 2026-08 (v2.1):** the profile engine is the **unified
+> switch-free nonlocal RT** (`--line-profile-method unified` + the three v2.1
+> refinements `--urt-he-rec --urt-aniso-es --urt-zone-w`) — all ON by default.
+> Validated on the full 40-model grid: 99.0% dominant-feature agreement with
+> the head record, textbook morphology per regime, no MC noise. Line
+> STRENGTHS (`L_corr`) are method-independent. The legacy paths are preserved:
+> `--line-profile-method mc` (old default) or `formal`, and `--no-urt-he-rec /
+> --no-urt-aniso-es / --no-urt-zone-w` to switch off individual refinements.
+> A wall-clock guard (`SNLT_URT_TIMEOUT`, default 180 s/line) degrades any
+> pathological epoch to the validated default shape instead of hanging.
+
+### (a) Batch — full time series for one model (the "best setup" command)
+Processes every `mesa.day*_post_Lbol_max.data` snapshot in the current
+directory. Works identically for **every regime** — IIP/Ib, IIn/CSM, Ibn, Icn,
+PPISN — composition switches (H-free `--he-budget`) auto-engage.
 
 ```bash
 python production_runner.py --batch \
-       --line-profile-method formal \
-       --he-lines --he1-nlte --he2-nlte
+       --he-lines --he1-nlte --he2-nlte \
+       --saturated-rt --he-budget \
+       --metal-lines --metal-cloudy --narrow-csm
 ```
 Writes: `prod_day*_lines.npz/.txt/.png`, `prod_day*_regime.txt`,
 `batch_grid.png`, `batch_movie.mp4`, `batch_lines_evolution.mp4`,
 `batch_summary.txt`, `batch_regime_summary.txt`, `batch_metrics.csv`.
+
+**Worked examples by model type** (identical command — that is the point of the
+unified engine; shown with the production venv + env vars spelled out, run from
+inside the model's directory):
+
+```bash
+# A4-like: RSG + H-rich CSM interaction (IIn) — e.g. input_models/A4
+cd input_models/A4
+XUVTOP=~/Documents/SNLT/chianti CLOUDY_EXE=~/c23.01/source/cloudy.exe \
+python ../../src/production_runner.py --batch \
+       --he-lines --he1-nlte --he2-nlte --saturated-rt --he-budget \
+       --metal-lines --metal-cloudy --narrow-csm
+```
+
+```bash
+# B4-like: compact/low-E YSG + H-rich CSM (weaker, earlier-peaking IIn)
+cd input_models/B4
+XUVTOP=~/Documents/SNLT/chianti CLOUDY_EXE=~/c23.01/source/cloudy.exe \
+python ../../src/production_runner.py --batch \
+       --he-lines --he1-nlte --he2-nlte --saturated-rt --he-budget \
+       --metal-lines --metal-cloudy --narrow-csm
+```
+
+```bash
+# C6-like: stripped He-star + H-free/He-rich CSM (Ibn) — --he-budget
+# auto-engages on <X_H> < 1e-3; metals matter most here (C/O lines)
+cd input_models/C6
+XUVTOP=~/Documents/SNLT/chianti CLOUDY_EXE=~/c23.01/source/cloudy.exe \
+python ../../src/production_runner.py --batch \
+       --he-lines --he1-nlte --he2-nlte --saturated-rt --he-budget \
+       --metal-lines --metal-cloudy --narrow-csm
+```
+
+```bash
+# PPISN-like: pulse-shell interaction, double-peak LC (e.g. res_day3.0) —
+# same command; --epochs= (equals form for negative pre-max epochs) optionally
+# restricts the epoch list; --keep-shared-snapshots if the model dir uses
+# symlinked/partitioned snapshots
+cd input_models/res_day3.0
+XUVTOP=~/Documents/SNLT/chianti CLOUDY_EXE=~/c23.01/source/cloudy.exe \
+python ../../src/production_runner.py --batch \
+       --he-lines --he1-nlte --he2-nlte --saturated-rt --he-budget \
+       --metal-lines --metal-cloudy --narrow-csm
+```
 
 ### (b) Single snapshot — one epoch
 Same flags, one file instead of `--batch`:
 
 ```bash
 python production_runner.py mesa.day080_post_Lbol_max.data \
-       --line-profile-method formal \
-       --he-lines --he1-nlte --he2-nlte
+       --he-lines --he1-nlte --he2-nlte --saturated-rt --he-budget
 ```
 
 ### (c) Multi-panel line-evolution movie (standalone, no re-run)
@@ -61,8 +115,8 @@ new physics analytically with `python validate_p1_physics.py` (no pipeline run).
 
 ```bash
 # Example: full IIn series with the saturated-line RT and the budget guard
+# (unified profile engine is the default; no method flag needed)
 python production_runner.py --batch \
-       --line-profile-method formal \
        --he-lines --he1-nlte --he2-nlte \
        --saturated-rt --he-budget
 
