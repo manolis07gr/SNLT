@@ -130,6 +130,24 @@ A11 red-skew centroid +96 km/s red/blue 4.51, C1 He I he-rec +0.05–0.20 peak
 (bounded), C4 bounded. Honest notes: He α_eff provisional; the aniso tail is a
 kernel model (not angle-dependent RT); zone-w window is a heuristic scale.
 
+**v2.1 FULL PRODUCTION — COMPLETE (2026-08-11).** All 40 models, head-matched
+epochs, flags `--line-profile-method unified --urt-he-rec --urt-aniso-es
+--urt-zone-w` + full line stack; zero failures (launched Aug-6 06:29, ~5 days
+wall, C-series Cloudy-limited). IMPACT (`analysis_unified_v21/`): dominant
+feature unchanged vs analysis_head in **99.0%** of 1101 model-epochs (11 flips)
+and vs unified-v2 in 96.3% (41 flips); every flip pattern is metal↔metal/He
+(C III 4647 ↔ O III 5007 etc. — the documented Cloudy/CHIANTI per-epoch
+intermittency), none attributable to the v2.1 RT physics. Morphology spot-check:
+A1 d050 Hα unified v2.1 = 1.126/0.857 P-Cygni — matches the June-head formal
+reference (1.10/0.80) — while the *default* mode's post-`--saturated-rt`
+corrected profile for the same epoch is a tall blue-shifted e-scattering shape
+(peak 6.7); i.e. for saturated homologous Balmer lines the unified path is now
+the morphology-faithful one. Figure:
+`obs_comparison/unified_v21_production_impact.png`. v2.1 lines.npz preserved at
+`~/Documents/snlt_v21_lines/` (40 models); input_models restored to the July
+default head-state from `~/Documents/snlt_head_full/` (41 dirs incl.
+res_day3.0, npz+mp4+png+txt).
+
 *(superseded v1 notes below, kept for the diagnostic record)*
 **◑ v1 record — engine built + validated, but the v1 profile
 coupling was NOT production-ready (committed 7d414d4).**

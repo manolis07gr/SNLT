@@ -4,7 +4,32 @@ Snapshot of in-flight work so a new session (or post-summarization continuation)
 picks up with zero context loss. Durable companions: `CLAUDE.md` (physics
 handover), `FUTURE_WORK.md` (staged plan, esp. **P2 #7**), `GETTING_STARTED.md`.
 
-## TL;DR — where we are
+## TL;DR — where we are (updated 2026-08-11)
+- **Unified line-RT v2.1 FULL PRODUCTION COMPLETE** (40 models, ~1101 epochs,
+  zero failures). Impact: dominant features 99.0% unchanged vs `analysis_head`,
+  96.3% vs v2; all flips = metal Cloudy/CHIANTI intermittency, none RT-driven.
+  Artifacts: `analysis_unified_v21/`,
+  `obs_comparison/unified_v21_production_impact.png`; v2.1 npz preserved at
+  `~/Documents/snlt_v21_lines/`. `input_models/` RESTORED to July default
+  head-state from `~/Documents/snlt_head_full/` (movies "as before" for all 40
+  + GO1 + res_day3.0).
+- **res_day3.0 (PPISN double-peak) delivered** (305 epochs, 4 movies, Hα
+  two-peak analysis in `obs_comparison/`); exposed-interaction verdict + STELLA
+  design for iPTF14hls in `iPTF14hls_model_design.md`.
+- **MESA ppisn_14hls progenitor RUN (~/Desktop/ppisn_14hls)**: stage 1 done
+  (He core 43.5 M⊙, env ~31 M⊙ retained at Z=1e-3); stage 2 pulses: pulse #1
+  weak (no ejection), **pulse #2 ejected 26.6 M⊙ (entire H envelope, E≈2.5e50,
+  → `LOGS/prerelax_prof001.data`)**, remnant 47.5 M⊙ (incl. 4.5 M⊙ H skin,
+  R~700 R⊙) reached central Si→Fe burning ~24 star-days later; run now grinding
+  at hydro dt (op_split_burn on; will likely never reach fe_core_infall —
+  ACCEPTED). **Progenitor deliverables secured in
+  `~/Documents/snlt_head_backup/mesa_progenitor/`** (profile209.data = pre-SN
+  star model 20700, x700, he_dep.mod, prerelax/prehydro profiles). Next task
+  (user-directed): ballistic-map shell +24 d, stitch composite STELLA model,
+  parameterized explosion (E_SN 5-8e51 at Fe-core cut) — see final messages of
+  session e15aa6af for the agreed method (blcode optional for shell evolution).
+
+## TL;DR — earlier state
 - Branch **`p0-p1-physics`** (== `main`), all code committed + pushed.
 - **OPTICAL LINE-LIST UPGRADE COMPLETE (P2 #7, items 1-5).** Final 40-model
   production grid re-run with full physics (25 lines + narrow-CSM + C_V), 0
